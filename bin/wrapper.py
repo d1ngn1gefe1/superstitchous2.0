@@ -282,8 +282,6 @@ def segmentation(fin):
     print 'winW:', winW
     print 'winH:', winH
     print 'crop:', crop
-
-    sys.exit(0)
 	
     args = []
     args.append(r'..\vsproject\superstitchous2013\x64\Release\segmentation.exe')
