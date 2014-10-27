@@ -1,0 +1,10 @@
+project:
+    name: "{NAME}"
+    stacks:
+      - folder: "stack1"
+        name: ""
+        metadata: ""
+        dimension: "({W_PX},{H_PX},1)"
+        resolution: "(1.0,1.0,1.0)"
+        zoomlevels: {ZOOMS}
+        fileextension: "jpg"

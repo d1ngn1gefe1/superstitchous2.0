@@ -1,0 +1,18 @@
+*.sln       binary
+*.csproj    merge=binary
+*.vbproj    merge=binary
+*.vcxproj   binary
+*.vcproj    merge=binary
+*.dbproj    merge=binary
+*.fsproj    merge=binary
+*.lsproj    merge=binary
+*.wixproj   merge=binary
+*.modelproj merge=binary
+*.sqlproj   merge=binary
+*.wwaproj   merge=binary
+
+*.jpg   binary
+*.png   binary
+*.gif   binary
+*.tif   binary
+*.tiff  binary

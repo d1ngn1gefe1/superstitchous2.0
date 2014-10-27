@@ -1,0 +1,107 @@
+/*!
+    @mainpage tminres - A C++ Template Implementation of Minres
+
+    \section introduction Introduction
+
+MINRES is a Krylov subspace iterative method for the solution of large sparse
+symmetric (possibly indefinite) linear systems.
+
+MINRES was first proposed by C.C. Paige and M.A. Saunders (1975).
+
+It is based on Lanczos tridiagonalization.
+A symmetric positive definite preconditioner can be specified.
+
+The present C++ implementation is based on the Matlab code by
+Michael Saunders (SOL and ICME, Stanford University), Chris Paige (School of Computer Science, McGill University) and Sou Cheng Choi (ICME, Stanford University)
+available at
+
+http://www.stanford.edu/group/SOL/software/minres.html
+
+    \section design Design
+
+The aim of tminres is to provide an efficient and portable implementation of 
+the MINRES() algorithm.
+
+tminres supports user-defined parallel and serial data structure for the 
+description of vectors, linear operators, and preconditioners.
+
+The abstract classes Vector_trait and Operator_trait define the signatures of
+the methods that the user-defined classes should provide.
+
+Users can decide whenever to use static (templates) or dynamic (derivated classes)
+polymorphism in order to provide such interfaces.
+
+Two concrete implementations of Vector_trait and Operator_trait are included in the code:
+<ul>
+  <li>  Serial code: A VectorSimple class implements the methods required by minres.
+  
+  <li>  Parallel code: A VectorEpetraAdapter shows how to wrap parallel data structures
+      in Trilinos (http://trilinos.sandia.gov/) to be used with tminres.
+</ul>
+
+A detailed description of the MINRES() function interface is provided here.
+
+    \section documentation Documentation
+    
+To create this documentation:
+
+\verbatim
+ $ make dox
+\endverbatim
+
+To erase the documentation
+\verbatim
+ $ make clean-dox
+\endverbatim
+
+    \section examples Examples
+
+<ul>
+<li> SerialExample:
+- In ex1 we solve a linear system with a diagonal operator
+  (half of the entries are positive, half are negative).
+  No preconditioner is used.
+
+- In ex2 we solve a linear system arising from a finite volume discretization
+  of the Stokes system in a square.
+  A diagonal precondtioner is used.
+
+To compile and execute the serial examples:
+
+\verbatim
+$ cd SerialExample
+$ make
+$ ./ex1.exe
+$ ./ex2.exe
+$ make clean
+\endverbatim
+
+<li> TrilinosExample:
+
+In this example we show how to use Trilinos parallel vectors and matrices
+(Epetra_MultiVector and Epetra_CrsMatrix) with our minres code.
+
+We consider a finite element discretization of the Stokes system in a cube.
+An algebraic multigrid block preconditioner is used.
+
+To compile this examples you need to have a working installation of Trilinos (10.8 or above).
+The following packages of Trilinos are required: Epetra, EpetraExt, ML, Teuchos.
+The installation of Trilinos may require additional external libraries, such as Blas, Lapack, Metis.
+
+To compile and execute the Trilinos examples you first need to edit the Makefile.in according to
+your system configuration and Trilinos compiling options.
+
+\verbatim
+$ cd TrilinosExample
+$ vi Makefile.in
+$ make
+$ mpirun -n XX ./ex1.exe
+$ make clean 
+\endverbatim
+</ul>
+ */
+
+To clean all examples:
+\verbatim
+$ make clean
+\endverbatim

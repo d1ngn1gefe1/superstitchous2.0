@@ -1,0 +1,20 @@
+CC = g++
+MPICC = mpiCC
+
+TRILINOS_BASE_DIR = /home/uvilla/library/trilinos-mpi
+TRILINOS_INCLUDE_DIR = $(TRILINOS_BASE_DIR)/include
+TRILINOS_LIB_DIR = $(TRILINOS_BASE_DIR)/lib
+TRILINOS_LIBS = -L$(TRILINOS_LIB_DIR) -lml -lifpack -laztecoo -lamesos -lteuchos -lzoltan -lepetraext -lepetra
+ 
+BLAS_LIB_DIR =
+BLAS_LIBS = -lblas
+LAPACK_LIB_DIR =
+LAPACK_LIBS = -llapack
+LB_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) -lgfortran
+
+METIS_LIB_DIR =
+METIS_LIBS = -lparmetis -lmetis
+
+C_FLAG = -g
+INCLUDE_FLAG = -I../ -I$(TRILINOS_INCLUDE_DIR)
+LIBS = $(TRILINOS_LIBS) $(METIS_LIBS) $(LB_LIBS)
