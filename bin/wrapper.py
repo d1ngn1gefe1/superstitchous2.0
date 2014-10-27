@@ -257,15 +257,19 @@ def segmentation(fin):
 
     inDir = cfg['inDir']+'/stack1/0'
     outDir = cfg['outDir']
-    projName = cfg['projName']
-    zoomLvls = cfg['zoomLvls']
-    gridW = cfg['gridW']
-    gridH = cfg['gridH']
+    with open(cfg['inDir']+'/project.yaml') as yaml:
+        for line in yaml:
+            if re.match('.*name: ".+"', line):
+                projName = line.split('"')[1]
+            if re.match('.*zoomlevels: .+', line):
+                zoomLvls = line.split('zoomlevels: ')[1].rstrip()
+    gridW = len(glob(inDir+'/0_*_0.tiff'))
+    gridH = len(glob(inDir+'/*_0_0.tiff'))
     coreW = cfg['coreW']
     coreH = cfg['coreH']
-    winW = cfg['winW']
-    winH = cfg['winH']
-    crop = cfg['crop']
+    winW = cfg.get('winW',55)
+    winH = cfg.get('winH',55)
+    crop = cfg.get('crop',0)
 	
     print 'inDir:', inDir
     print 'outDir:', outDir
@@ -279,6 +283,8 @@ def segmentation(fin):
     print 'winH:', winH
     print 'crop:', crop
 
+    sys.exit(0)
+	
     args = []
     args.append(r'..\vsproject\superstitchous2013\x64\Release\segmentation.exe')
     args += [
