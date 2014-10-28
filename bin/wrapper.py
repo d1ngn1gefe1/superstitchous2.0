@@ -126,7 +126,8 @@ def stitching(fin):
     mkdir(cfg['outDir'])
     mkdir(imDir)
 
-    if 'usePoslist' not in cfg:
+    usePoslist = cfg.get('usePoslist', 0)
+    if usePoslist == 0:
         maxPeakX = cfg.get('maxPeakX', float(imW - xOff) / imW * 0.2 * math.sqrt(imW * imH))
         maxPeakY = cfg.get('maxPeakY', float(imH - yOff) / imH * 0.2 * math.sqrt(imW * imH))
         maxPeakXY = cfg.get('maxPeakXY', float((imW - xOff) * (imH - yOff)) / (imW * imH) * 0.2 * math.sqrt(imW * imH))
@@ -163,7 +164,7 @@ def stitching(fin):
     print 'im out sz:', (outWidth, outHeight)
     
     imData = [(f, c[0] - coords[0][0], c[1] - coords[0][1]) for f, c in zip(imFiles, coords)]
-    if 'usePoslist' not in cfg:
+    if usePoslist == 0:
         imData = makeOrderedImData(imData, snakeDir, (cols, rows))
 
     # write image data
@@ -190,7 +191,7 @@ def stitching(fin):
             cfg.get('cacheSz', 50),
             imW,
             imH,
-            1 if ('usePoslist' in cfg) else 0,
+            usePoslist,
             weightPwr,
             peakRadius,
             fixNaN,
