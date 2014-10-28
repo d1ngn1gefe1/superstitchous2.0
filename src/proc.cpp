@@ -326,13 +326,13 @@ int main(int argc, const char *argv[]) {
 			ss << "(" << duplicate << ")";
 
 		string text = ss.str();
-		int fontFace = FONT_HERSHEY_PLAIN;
-		double fontScale = 4.5 / text.length();
+		int fontFace = FONT_HERSHEY_SIMPLEX;
+		double fontScale = (double)3 / text.length();
 		int thickness = 2;
 		int baseLine = 0;
 		Size textSize = getTextSize(text, fontFace, fontScale, thickness, &baseLine);
 		Point blPt(tlPts[i][0] + (winW - textSize.width) / 2, tlPts[i][1] + (winH + textSize.height) / 2);
-		putText(im_rgb, text, blPt, fontFace, fontScale, Scalar(0, 255, 255), thickness, 8);
+		putText(im_rgb, text, blPt, fontFace, fontScale, (duplicate > 0) ? Scalar(0, 255, 0) : Scalar(0, 255, 255), thickness, 8);
 		putText(im, text, blPt, fontFace, fontScale, Scalar(255, 255, 255), thickness, 8);
 
 		if (crop)
@@ -343,7 +343,5 @@ int main(int argc, const char *argv[]) {
 	imwrite(outDir + "/" + projName + "-core.jpg", im);
 	imwrite(outDir + "/" + projName + "-core-color.jpg", im_rgb);
 
-	imshow("i", im_rgb);
-	waitKey(0);
 	return 0;
 }
