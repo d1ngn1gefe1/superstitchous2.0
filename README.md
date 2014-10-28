@@ -63,12 +63,11 @@ Parameter                           | Description
 ----------------------------------- | ------------------------------------------
 inDir                               | directory with `project.yaml`; output directory of stitching
 outDir                              | output directory of segmented cores
-projName                            | project name
-zoomLvls                            | number of zoom levels
-gridW                               | number of tiles horizontally
-gridH                               | number of tiles vertically
 coreW                               | number of cores in each row
 coreH                               | number of cores in each column
-winW                                | width of segmenting window in `cropped.jpg`
-winH                                | height of segmenting window in `cropped.jpg`
-crop                                | 1 = generate the output; 0 = only view the segmentation result in downsampled image
+
+Optional parameter                  | Description | Default
+----------------------------------- | ----------- | -------
+winW                                | width of segmenting window in `cropped.jpg` | 55
+winH                                | height of segmenting window in `cropped.jpg` | 55
+crop                                | 1 = generate the output; 0 = only view the segmentation result in downsampled image | 0
