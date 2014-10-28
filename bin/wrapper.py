@@ -119,7 +119,7 @@ def stitching(fin):
     imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None))
 
     #sanity checks
-    im = misc.imread(glob(join(cfg['inDir'], '*.tif'))[0])
+    im = misc.imread(glob(join(cfg['inDir'], '*S.tif'))[0])
     imH, imW = im.shape
 
     imDir = join(cfg['outDir'], STACK_NAME, '0')
