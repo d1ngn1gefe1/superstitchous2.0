@@ -136,7 +136,7 @@ static void loadGridIm(const string &path,const GridPt& pt, Mat &out, int w, int
 	assert(out.type() == CV_32FC1); 
 }
 
-void imCrop(const string &outPath, const string &inPath,const Rect& outRec,const Size& tileSz,const Size& gridDim, const string &fileName)
+void imCrop(const string &outPath, const string &inPath, const Rect& outRec,const Size& tileSz,const Size& gridDim, const string &fileName)
 {
 	// check validity
 	Point tl = outRec.tl();

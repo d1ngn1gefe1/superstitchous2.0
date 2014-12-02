@@ -50,8 +50,8 @@ class UserInput
 		auto name = string(in);
 		if (!boost::filesystem::exists(name))
 		{
-			boost::filesystem::create_directory(name);
-			if (!boost::filesystem::exists(name))
+			auto madeit = boost::filesystem::create_directory(name);
+			if (madeit==false)//made a directory but really didn't?
 			{
 				boost::filesystem::path full_path(boost::filesystem::current_path());
 				std::string errormsg = string("Can't find folder: ") + name + string(" ") + full_path.string();
@@ -163,7 +163,7 @@ public:
 			dists = getMaxDists(argv[7], argv[8], argv[9]);
 			imSz = getSize(argv[11], argv[12]);
 			weightPwr = getPower(argv[14]);
-			peakRadius = getPeakRadius(argv[15]);//check this out
+			peakRadius = getPeakRadius(argv[15]);//conceptually flawed because the bluring does this
 			fixNaNs = getFixNans(argv[16]);
 			bgSub = getBGSubtract(argv[17]);
 			tileSz = getSize(argv[18], argv[19]);
@@ -265,7 +265,8 @@ void writePoslist(const string &file, const vector<float> &xs, const vector<floa
 	assert(xs.size() == fetch.szInIms.area() && ys.size() == fetch.szInIms.area());
 
 	FILE *f = fopenWrap(file.c_str(), "w");
-	for (int i = 0; i < xs.size(); i++) {
+	for (int i = 0; i < xs.size(); i++) 
+	{
 		fprintf(f, "%s; ; (%f, %f)\n", fetch.imgPaths[i].c_str(), xs[i], ys[i]);
 	}
 	fclose(f);

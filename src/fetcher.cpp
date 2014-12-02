@@ -63,7 +63,7 @@ ImgFetcher::ImgFetcher(const vector<string> &imgPaths, Size szInIms, size_t cach
 }
 
 void ImgFetcher::getMat(const string &file, Mat &out) {
-	printf("reading %s\n", file.c_str());
+	//printf("reading %s\n", file.c_str());//too much noise?
 
 	cache.get(file, out, [&](const string &file, Mat &out) {
 		if (imSz.width == 0 && imSz.height == 0) { 

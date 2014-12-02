@@ -117,9 +117,15 @@ def stitching(fin):
     print fin
     cfg = json.load(open(fin))
     imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None))
-
     #sanity checks
-    im = misc.imread(glob(join(cfg['inDir'], '*S.tif'))[0])
+    #Named either *S or *SLIM, its hard-coded, but not really because its a scripting language
+    tryone=glob(join(cfg['inDir'], '*S.tif'))
+    trytwo=glob(join(cfg['inDir'], '*SLIM.tif'))
+    if not tryone:
+        useme = trytwo
+    else:
+        useme = tryone
+    im = misc.imread(useme[0])
     imH, imW = im.shape
 
     imDir = join(cfg['outDir'], STACK_NAME, '0')
@@ -264,6 +270,11 @@ def segmentation(fin):
                 projName = line.split('"')[1]
             if re.match('.*zoomlevels: .+', line):
                 zoomLvls = line.split('zoomlevels: ')[1].rstrip()
+    files = glob(inDir+'/0_0_0.tiff')
+    if not files:
+        sys.exit(2)
+    im = misc.imread(files[0])
+    tileH, tileW = im.shape
     gridW = len(glob(inDir+'/0_*_0.tiff'))
     gridH = len(glob(inDir+'/*_0_0.tiff'))
     coreW = cfg['coreW']
@@ -276,6 +287,8 @@ def segmentation(fin):
     print 'outDir:', outDir
     print 'projName:', projName
     print 'zoomLvls:', zoomLvls
+    print 'tileW:', tileW
+    print 'tileH:', tileH
     print 'gridW:', gridW
     print 'gridH:', gridH
     print 'coreW:', coreW
@@ -291,6 +304,8 @@ def segmentation(fin):
     		outDir,
     		projName,
 			zoomLvls,
+			tileW,
+			tileH,
     		gridW,
     		gridH,
     		coreW,

@@ -180,7 +180,7 @@ bool findOutliers(int K, vector<PxPoint> &tlPts, const Mat &label)
 	double mean = accumulate(count.begin(), count.end(), 0.0) / K;
 	for (int j = 0; j < K; j++)
 	{
-		if (count[j] < mean / 2)
+		if (count[j] < mean / 4)
 		{
 			printf("detect outliers with label %d\n", j);
 			int numRemoved = 0;
@@ -239,25 +239,28 @@ void coreOrdering(vector<PxPoint> &tlPts, vector<CorePt> &corePts, int coreW, in
 
 void paramParser(const char *argv[],
 	string &inDir, string &outDir, string &projName, int &zoomLvls,
-	int &gridW, int &gridH, int &coreW, int &coreH, int &winW, int &winH,
+	int &tileW, int &tileH, int &gridW, int &gridH, int &coreW, int &coreH, int &winW, int &winH,
 	bool &crop) {
 	inDir = string(argv[1]);
 	outDir = string(argv[2]);
 	projName = string(argv[3]);
 	zoomLvls = atoi(argv[4]);
-	gridW = atoi(argv[5]);
-	gridH = atoi(argv[6]);
-	coreW = atoi(argv[7]);
-	coreH = atoi(argv[8]);
-	winW = atoi(argv[9]);
-	winH = atoi(argv[10]);
-	crop = (atoi(argv[11]) == 1) ? true : false;
+	tileW = atoi(argv[5]);
+	tileH = atoi(argv[6]);
+	gridW = atoi(argv[7]);
+	gridH = atoi(argv[8]);
+	coreW = atoi(argv[9]);
+	coreH = atoi(argv[10]);
+	winW = atoi(argv[11]);
+	winH = atoi(argv[12]);
+	crop = (atoi(argv[13]) == 1) ? true : false;
 
 	printf("*************** configuration ***************\n");
 	printf("inDir: %s\n", inDir.c_str());
 	printf("outDir: %s\n", outDir.c_str());
 	printf("projName: %s\n", projName.c_str());
 	printf("zoomLvls: %d\n", zoomLvls);
+	printf("tileW: %d, tileH: %d\n", tileW, tileH);
 	printf("gridW: %d, gridH: %d\n", gridW, gridH);
 	printf("coreW: %d, coreH: %d\n", coreW, coreH);
 	printf("winW: %d, winH: %d\n", winW, winH);
@@ -266,21 +269,21 @@ void paramParser(const char *argv[],
 }
 
 int main(int argc, const char *argv[]) {
-	if (argc != 12) {
+	if (argc != 14) {
 		printf("wrong number of arguments: argc = %d\n", argc);
 		exit(-2);
 	}
 
 	string inDir, outDir, projName;
-	int zoomLvls, gridW, gridH, coreW, coreH, winW, winH;
+	int zoomLvls, tileW, tileH, gridW, gridH, coreW, coreH, winW, winH;
 	bool crop;
 
 	paramParser(argv,
 		inDir, outDir, projName, zoomLvls,
-		gridW, gridH, coreW, coreH, winW, winH,
+		tileW, tileH, gridW, gridH, coreW, coreH, winW, winH,
 		crop);
 
-	Size tileSz(4096, 4096);
+	Size tileSz(tileW, tileH);
 	Size gridDim(gridW, gridH);
 
 	if (_mkdir(outDir.c_str()) == -1)
@@ -335,9 +338,14 @@ int main(int argc, const char *argv[]) {
 		putText(im_rgb, text, blPt, fontFace, fontScale, (duplicate > 0) ? Scalar(0, 255, 0) : Scalar(0, 255, 255), thickness, 8);
 		putText(im, text, blPt, fontFace, fontScale, Scalar(255, 255, 255), thickness, 8);
 
-		if (crop)
-			imCrop(outDir, inDir, Rect(tlPts[i][0] * pow(2, zoomLvls), tlPts[i][1] * pow(2, zoomLvls),
-				winSz.width*pow(2, zoomLvls), winSz.height*pow(2, zoomLvls)), tileSz, gridDim, text);
+		if (crop) {
+			imCrop(outDir,
+				inDir,
+				Rect(tlPts[i][0] * pow(2, zoomLvls), tlPts[i][1] * pow(2, zoomLvls), winSz.width*pow(2, zoomLvls), winSz.height*pow(2, zoomLvls)),
+				tileSz,
+				gridDim,
+				text);
+		}
 	}
 
 	imwrite(outDir + "/" + projName + "-core.jpg", im);
