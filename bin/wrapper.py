@@ -119,7 +119,7 @@ def stitching(fin):
     imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None))
     #sanity checks
     #Named either *S or *SLIM, its hard-coded, but not really because its a scripting language
-    tryone=glob(join(cfg['inDir'], '*S.tif'))
+    tryone=glob(join(cfg['inDir'], 'Matlab*.tif'))
     trytwo=glob(join(cfg['inDir'], '*SLIM.tif'))
     if not tryone:
         useme = trytwo

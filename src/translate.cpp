@@ -125,6 +125,7 @@ float getConfSumNbrs(const Mat &peakIm, const Point &maxLoc, double bestSqDist) 
 			}
 
 			s += peakIm.at<float>(usedY, usedX);
+			
 		}
 	}
 
@@ -133,7 +134,6 @@ float getConfSumNbrs(const Mat &peakIm, const Point &maxLoc, double bestSqDist) 
 	if (s <= 0) {
 		s = static_cast<decltype(s)>(1e-10);	// some small value
 	}
-
 	return s;
 }
 
@@ -166,7 +166,7 @@ static TransData phaseCorrThr(const shared_future<FFTHolder> &fixFut,  const sha
 	printf("max: %lf, (%d, %d)\n", maxVal, maxLoc2.x, maxLoc2.y);
 	minMaxLoc(nbr, &minVal, &maxVal, &minLoc2, &maxLoc2);
 	printf("min: %lf, (%d, %d)\n", minVal, minLoc2.x, minLoc2.y);
-	printf("mmaxin: %lf, (%d, %d)\n", maxVal, maxLoc2.x, maxLoc2.y);
+	printf("max: %lf, (%d, %d)\n", maxVal, maxLoc2.x, maxLoc2.y);
 	imshow("a", fix);
 	waitKey(0);
 	*/
@@ -177,7 +177,6 @@ static TransData phaseCorrThr(const shared_future<FFTHolder> &fixFut,  const sha
 	Point bestPt = phaseCorr(fixFFT.fft, nbrFFT.fft, imSz, c2rPlan, buf, hint, dist, mask, maxLoc, conf, getConfSumNbrs);
 
 	fftwf_free_thr(buf);
-
 	//	printf("got conf %f old conf %f rat %f, maxLoc %d %d phase %d %d, %d %d, dist %lf, mask sz: %d %d\n\n", conf, oldConf, conf / 1000 / oldConf, maxLoc.x, maxLoc.y,
 	//			pair[0][0], pair[0][1], pair[1][0], pair[1][1], dist, mask.size[1], mask.size[0]);
 	TransData dat(bestPt.x, bestPt.y, dist, conf);
@@ -277,8 +276,9 @@ Point phaseCorr(const float *fix, const float *im, const Size &imSz, const fftwf
 		float a = fix[i] * im[i] + fix[i + 1] * im[i + 1];
 		float b = fix[i + 1] * im[i] - fix[i] * im[i + 1];
 		float norm = sqrt(a * a + b * b);
-		buf[i] = a / norm;
-		buf[i + 1] = b / norm;
+		buf[i] = (norm != 0) ? (a / norm) : 0;
+		buf[i + 1] = (norm != 0) ? (b / norm) : 0;
+		//printf("wow %f, %f, %f, %f, %f, %f, %f, %f\n", fix[i], fix[i+1], im[i], im[i+1], a, b, buf[i], buf[i + 1]);
 	}
 
 	fftwf_execute_dft_c2r(plan, (fftwf_complex *)buf, buf);

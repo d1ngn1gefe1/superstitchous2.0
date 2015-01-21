@@ -326,7 +326,7 @@ int main(int argc, const char *argv[])
 		PairToTransData transMap;
 
 		// uncomment to use stored phase corr results
-		//		readTranMap(outDir + "/phasecorr_pairs.txt", transMap);
+		// readTranMap(outDir + "/phasecorr_pairs.txt", transMap);
 
 		// uncomment to run phase corr and store the results
 		storeTrans(fetch, Point2f(u.xOff, u.yOff), transMap, u.dists);
