@@ -64,6 +64,10 @@ void loadFloatTiffFast(const string &name, float *buf, int w, int h)
 		printf("err: can't read %s\n", name.c_str());
 	}
 	fseek(in, 8, SEEK_SET);
-	fread(buf, sizeof(float), w * h, in);
+	auto checkme = fread(buf, sizeof(float), w * h, in);
+	if (checkme!=w*h)
+	{
+		printf("Warning: %s is corrupt",name.c_str());
+	}
 	fclose(in);
 }
