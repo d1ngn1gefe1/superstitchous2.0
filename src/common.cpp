@@ -2,10 +2,10 @@
 
 #include "common.hpp"
 #include "tiffint.hpp"
+//#include "timeslice.hpp"
 #include <cstring>
 #include <cmath>
 #include <ctime>
-
 void imWriteWin(const string &name, const Mat &im) {
 #ifdef IMRW_BUG
 	CvMat arr = im;
@@ -237,7 +237,8 @@ void getBg(Mat &bgIm, vector<string> &imPaths, float bgSub, int w, int h)
 {
 	if (bgSub == 0.0) // not doing background subtraction
 		return;
-
+	
+	std::cout <<"Starting Background Subtraction:" << std::endl;
 	int choose = (int)(imPaths.size() * bgSub);
 
 	map<double, int> meanToIndex;

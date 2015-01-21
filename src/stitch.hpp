@@ -39,5 +39,5 @@ struct TileHolder {
 		return getBin(pt);
 	}
 
-	void makeTile(const GridPt &tilePt, ImgFetcher &fetch, Mat &out, Mat &bg = Mat());
+	void makeTile(const GridPt &tilePt, ImgFetcher &fetch, Mat &out, Mat &bg);
 };

@@ -49,7 +49,7 @@ def saveZoomedIms(folder, zoomLvls=6, verbose=True):
 
     def printV(*args):
         if verbose:
-            print ' '.join(str(a) for a in args)
+            print( ' '.join(str(a) for a in args))
 
     for zoom in xrange(zoomLvls):
         printV('--- generating zoom %d ---' % (zoom + 1))
@@ -93,8 +93,8 @@ def getPxSize(folder):
 def makeOrderedImData(dat, snakeDir, szInIms):
     """Rearrange items in dat, whose elements are in a snake shape, into row-major order. Return new array."""
     arr = []
-    for i in xrange(szInIms[1]):
-        for j in xrange(szInIms[0]):
+    for i in range(szInIms[1]):
+        for j in range(szInIms[0]):
             if snakeDir == 'col':
                 ind = j * szInIms[1]
                 if j % 2:
@@ -108,23 +108,24 @@ def makeOrderedImData(dat, snakeDir, szInIms):
                 else:
                     ind += j;
             else:
-                print 'invalid snakeDir'
+                print('invalid snakeDir')
                 sys.exit(1)
             arr.append(dat[ind])
     return arr
       
 def stitching(fin):
-    print fin
+    print(fin)
     cfg = json.load(open(fin))
     imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None))
     #sanity checks
     #Named either *S or *SLIM, its hard-coded, but not really because its a scripting language
-    tryone=glob(join(cfg['inDir'], '*S.tif'))
-    trytwo=glob(join(cfg['inDir'], '*SLIM.tif'))
+    tryone=glob(join(cfg['inDir'], '*S*.tif'))
+    trytwo=glob(join(cfg['inDir'], '*DPM*.tif'))
     if not tryone:
         useme = trytwo
     else:
         useme = tryone
+    
     im = misc.imread(useme[0])
     imH, imW = im.shape
 
@@ -157,17 +158,17 @@ def stitching(fin):
     fixNaN = int(cfg.get('fixNaN', 1))
     bgSub = cfg.get('bgSub', 0)
 
-    print 'rows:', rows, 'cols:', cols, 'xOff:', xOff, 'yOff:', yOff, 'snakeDir:', snakeDir
-    print 'im sz:', (imW, imH)
-    print 'input dir:', cfg['inDir']
-    print 'CATMAID dir:', cfg['outDir']
-    print 'image dir:', imDir
-    print 'maxPeakX, Y, XY:', maxPeakX, maxPeakY, maxPeakXY
-    print 'weight power:', weightPwr
-    print 'peak radius:', peakRadius
-    print 'fix NaNs?', fixNaN
-    print 'background subtraction ', bgSub
-    print 'im out sz:', (outWidth, outHeight)
+    print( 'rows:', rows, 'cols:', cols, 'xOff:', xOff, 'yOff:', yOff, 'snakeDir:', snakeDir)
+    print( 'im sz:', (imW, imH))
+    print( 'input dir:', cfg['inDir'])
+    print( 'CATMAID dir:', cfg['outDir'])
+    print ('image dir:', imDir)
+    print ('maxPeakX, Y, XY:', maxPeakX, maxPeakY, maxPeakXY)
+    print ('weight power:', weightPwr)
+    print ('peak radius:', peakRadius)
+    print ('fix NaNs?', fixNaN)
+    print ('background subtraction ', bgSub)
+    print ('im out sz:', (outWidth, outHeight))
     
     imData = [(f, c[0] - coords[0][0], c[1] - coords[0][1]) for f, c in zip(imFiles, coords)]
     if usePoslist == 0:
@@ -175,15 +176,16 @@ def stitching(fin):
 
     # write image data
     tmpFd, tmpPath = tempfile.mkstemp()
-    debuggles = '\n'.join(' '.join(map(str, dat)) for dat in imData)
-    os.write(tmpFd, debuggles)
-    os.close(tmpFd)
+    imglist = '\n'.join(' '.join(map(str, dat)) for dat in imData)
+    os.write(tmpFd, bytes(imglist,'UTF-8'))
+   # os.close(tmpFd)
 
     args = []
     if platform.system() == 'Windows':
         args.append(r'..\vsproject\superstitchous2013\x64\Release\stitching.exe')
     else:
         args.append(r'./main.exe')
+#        args.append(r'../src/stiching')
     args += [
             tmpPath,
             imDir,
@@ -205,14 +207,16 @@ def stitching(fin):
             outWidth,
             outHeight
             ]
-    args = map(str, args)
-##    args = ['gdb', '--args'] + args
-    print ' '.join(args)
+    args = list(map(str, args)) #for Python 3
+##  args = ['gdb', '--args'] + args
+    print( ' '.join(args))
+    quit()
+#    print(args[0])
     if call(args) != 0:
         os.remove(tmpPath)
         sys.exit(1)
 
-    os.remove(tmpPath)
+    os.remove(tmpPath) #Should use RAII mechanism
 
     saveZoomedIms(imDir, cfg['zoomLvls'])
 
@@ -229,13 +233,13 @@ def stitching(fin):
         im = misc.imresize(im, 256. / len(im[0]))
         padLen = (256 - len(im)) / 2
         im = np.pad(im, ((padLen, padLen), (0, 0)), mode='constant')
-    print 'writing small.jpg'
+    print ('writing small.jpg')
     misc.imsave(join(cfg['outDir'], STACK_NAME, '0', 'small.jpg'), im)
 
     # write project.yaml file
     projStr = open('project.yaml').read()
     projStr = projStr.replace('{NAME}', cfg['projName'])
-    print 'total pixel width/height: %d/%d' % (pxW, pxH)
+    print ('total pixel width/height: %d/%d' % (pxW, pxH))
     projStr = projStr.replace('{W_PX}', str(pxW))
     projStr = projStr.replace('{H_PX}', str(pxH))
     projStr = projStr.replace('{ZOOMS}', str(cfg['zoomLvls']))
@@ -248,18 +252,18 @@ def stitching(fin):
         w, h = re.findall(r'total size: (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)', info)[0]
         w = float(w)
         h = float(h)
-        print 'actual dims: (%s, %s)' % (w, h)
+        print ('actual dims: (%s, %s)' % (w, h))
         w = round(w / (2 ** SMALL_ZOOM))
         h = round(h / (2 ** SMALL_ZOOM))
-        print 'cropped dims: (%s, %s)' % (w, h)
+        print ('cropped dims: (%s, %s)' % (w, h))
         im = im[:h, :w]
-        print 'saving cropped.jpg'
+        print ('saving cropped.jpg')
         misc.imsave(join(imDir, 'cropped.jpg'), im)
 
 ##        print 'window size:', getWinSize(im)
 
 def segmentation(fin):
-    print fin
+    print (fin)
     cfg = json.load(open(fin))
 
     inDir = cfg['inDir']+'/stack1/0'
@@ -283,19 +287,19 @@ def segmentation(fin):
     winH = cfg.get('winH',55)
     crop = cfg.get('crop',0)
 	
-    print 'inDir:', inDir
-    print 'outDir:', outDir
-    print 'projName:', projName
-    print 'zoomLvls:', zoomLvls
-    print 'tileW:', tileW
-    print 'tileH:', tileH
-    print 'gridW:', gridW
-    print 'gridH:', gridH
-    print 'coreW:', coreW
-    print 'coreH:', coreH
-    print 'winW:', winW
-    print 'winH:', winH
-    print 'crop:', crop
+    print ('inDir:', inDir)
+    print ('outDir:', outDir)
+    print ('projName:', projName)
+    print ('zoomLvls:', zoomLvls)
+    print ('tileW:', tileW)
+    print ('tileH:', tileH)
+    print ('gridW:', gridW)
+    print ('gridH:', gridH)
+    print ('coreW:', coreW)
+    print ('coreH:', coreH)
+    print ('winW:', winW)
+    print ('winH:', winH)
+    print ('crop:', crop)
 	
     args = []
     args.append(r'..\vsproject\superstitchous2013\x64\Release\segmentation.exe')
@@ -315,7 +319,7 @@ def segmentation(fin):
 			crop
     		]
     args = map(str, args)
-    print ' '.join(args)
+    print (' '.join(args))
 
     if call(args) != 0:
         sys.exit(1)

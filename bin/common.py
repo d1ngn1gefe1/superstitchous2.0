@@ -4,9 +4,10 @@ import re
 import errno
 from glob import glob
 from itertools import takewhile
-
+import functools #for reduce
+import math #For ceil
 def join(*args):
-    return reduce(os.path.join, args)
+    return functools.reduce(os.path.join, args)
 
 def mkdir(d):
     try:
@@ -16,7 +17,7 @@ def mkdir(d):
             raise
     
 def err(s, code=1):
-    print s
+    print( s)
     sys.exit(code)
 
 def parsePoslist(poslistLines, poslistDir):
@@ -40,7 +41,7 @@ def parsePoslist(poslistLines, poslistDir):
     if coords[0][0] == coords[1][0]:
         snakeDir = 'col'
         rows = len(list(takewhile(lambda c: c[0] == coords[0][0], coords)))
-        cols = len(coords) / rows
+        cols = math.ceil(len(coords) / rows) #Change for python3
         yOff = coords[1][1] - coords[0][1]
         if cols == 1:
             xOff = 0
@@ -49,7 +50,7 @@ def parsePoslist(poslistLines, poslistDir):
     elif coords[0][1] == coords[1][1]:
         snakeDir = 'row'
         cols = len(list(takewhile(lambda c: c[1] == coords[0][1], coords)))
-        rows = len(coords) / cols
+        rows = math.ceil(len(coords) / cols)
         xOff = coords[1][0] - coords[0][0]
         if rows == 1:
             yOff = 0
@@ -61,7 +62,6 @@ def parsePoslist(poslistLines, poslistDir):
         rows = -1
         xOff = -1
         yOff = -1
-
     return imFiles, coords, snakeDir, cols, rows, xOff, yOff
 
 def parsePoslistDir(poslistDir, poslistPath=None):

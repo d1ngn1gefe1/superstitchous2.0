@@ -1,8 +1,12 @@
 #include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
-#include "fftw3.h"
+#include <fftw3.h>
+#include <string>
+#include <exception>
+#include <stdexcept>
 #include <fstream>
 #include <regex>
+//
 #include "fetcher.hpp"
 #include "optimize.hpp"
 #include "stitch.hpp"
@@ -32,8 +36,8 @@ void checkforfile(const string& name) // throws IOException() just like teh java
 	auto foo = boost::filesystem::canonical(pathway).make_preferred();
 	if (!boost::filesystem::exists(foo))
 	{
-		std::string errormsg = string("Can't find file") + name;
-		throw std::exception(errormsg.c_str());
+		auto errormsg = string("Can't find file") + name;
+		throw std::runtime_error(errormsg.c_str());
 	}
 }
 
@@ -55,7 +59,7 @@ class UserInput
 			{
 				boost::filesystem::path full_path(boost::filesystem::current_path());
 				std::string errormsg = string("Can't find folder: ") + name + string(" ") + full_path.string();
-				throw std::exception(errormsg.c_str());
+				throw std::runtime_error(errormsg.c_str());
 			}
 			else
 			{
@@ -87,7 +91,7 @@ class UserInput
 		if (val < 0)
 		{
 			std::string errormsg = string("Peak power should be non-negative:") + in;
-			throw std::exception(errormsg.c_str());
+			throw std::runtime_error(errormsg.c_str());
 		}
 		return val;
 	}
@@ -97,7 +101,7 @@ class UserInput
 		if (val < 0)
 		{
 			std::string errormsg = string("Peak radius should be non-negative:") + in;
-			throw std::exception(errormsg.c_str());
+			throw std::runtime_error(errormsg.c_str());
 		}
 		return val;
 	}
@@ -112,7 +116,7 @@ class UserInput
 		if (betterbeone != 1)
 		{
 			std::string errormsg = string("Could not read bg value, saw:") + in;
-			throw std::exception(errormsg.c_str());
+			throw std::runtime_error(errormsg.c_str());
 		}
 		return (val >= 1 || val < 0) ? 0.0f : val;
 	}
@@ -135,7 +139,7 @@ class UserInput
 		if (argc != 20)
 		{
 			std::string errormsg = string("Wrong number of arguments saw: ") + std::to_string(argc);
-			throw std::exception(errormsg.c_str());
+			throw std::runtime_error(errormsg.c_str());
 		}
 	}
 public:
@@ -201,6 +205,7 @@ public:
 
 void loadImgData(const UserInput& input, vector<string> &out, LSQRVectors &trans, bool keepall)
 {
+	TimeSlice t("Stiching List Parsed: ");
 	try {
 		auto path = input.poslist;
 		ifstream f(path);
@@ -216,7 +221,7 @@ void loadImgData(const UserInput& input, vector<string> &out, LSQRVectors &trans
 		std::regex matchme(re);
 		auto isZero = [](float val){ return (val < FLT_EPSILON) && ((val > -FLT_EPSILON)); };
 		while (getline(f, line)) {
-			std::tr1::cmatch res;
+			std::cmatch res;
 			std::regex_search(line.c_str(), res, matchme);
 			if (line.empty() || line[0] == ' ' || line[0] == '#')
 			{
@@ -226,7 +231,7 @@ void loadImgData(const UserInput& input, vector<string> &out, LSQRVectors &trans
 			if (res.size() != 4)
 			{
 				auto msg = string("Invalid Line: ") + line;
-				throw std::exception(msg.c_str());//?
+				throw std::runtime_error(msg.c_str());//?
 			}
 			auto x = stof(res[2]);
 			auto y = stof(res[3]);
@@ -251,7 +256,7 @@ void loadImgData(const UserInput& input, vector<string> &out, LSQRVectors &trans
 		if (out.size() != input.szInIms.area())
 		{
 			auto msg = string("Not enough images: expecting ") + std::to_string(input.szInIms.area()) + " but found " + std::to_string(out.size());
-			throw std::exception(msg.c_str());//?
+			throw std::runtime_error(msg.c_str());//?
 		}
 	}
 	catch (std::exception& e)
@@ -286,7 +291,7 @@ void writeWeights(const string &file, const PairToTransData &transMap) {
 int main(int argc, const char *argv[])
 {
 	std::cout << "Starting Stiching..." << std::endl;
-	TimeSlice t("Stiching Took:");
+	TimeSlice t("Stiching: ");
 	// parse arguments
 	if (!useOptimized())
 	{
@@ -306,7 +311,6 @@ int main(int argc, const char *argv[])
 	// background subtraction
 	Mat bgIm;
 	getBg(bgIm, imPaths, u.bgSub, u.imSz.width, u.imSz.height);
-
 	if (!fftwf_init_threads()) {
 		printf("error initializing multi-threaded FFTW\n");
 		exit(1);
@@ -322,6 +326,7 @@ int main(int argc, const char *argv[])
 	}
 	else
 	{
+		TimeSlice t1("Phase Correlation");
 		// phase correlation
 		PairToTransData transMap;
 
@@ -382,6 +387,7 @@ int main(int argc, const char *argv[])
 
 	// linear blending & tile generation
 	//Size tileSz(4096, 4096); // size of output tile in pixels
+	TimeSlice tt("Rasterbation:");
 	TileHolder tiles(imPaths, xs, ys, u.imSz, u.tileSz);
 	Mat tile;
 	for (int j = 0; j < tiles.szInTiles.width; j++) {
