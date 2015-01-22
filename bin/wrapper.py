@@ -117,20 +117,7 @@ def stitching(fin):
     print(fin)
     cfg = json.load(open(fin))
     imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None))
-    #sanity checks
-    #Named either *S or *SLIM, its hard-coded, but not really because its a scripting language
-<<<<<<< HEAD
-    tryone=glob(join(cfg['inDir'], '*S*.tif'))
-    trytwo=glob(join(cfg['inDir'], '*DPM*.tif'))
-=======
-    tryone=glob(join(cfg['inDir'], 'Matlab*.tif'))
-    trytwo=glob(join(cfg['inDir'], '*SLIM.tif'))
->>>>>>> ef2ee542cde70592ee780f464565be528b898a1b
-    if not tryone:
-        useme = trytwo
-    else:
-        useme = tryone
-    
+    useme = glob(join(cfg['inDir'], cfg['imgRegex']))   
     im = misc.imread(useme[0])
     imH, imW = im.shape
 
@@ -163,17 +150,17 @@ def stitching(fin):
     fixNaN = int(cfg.get('fixNaN', 1))
     bgSub = cfg.get('bgSub', 0)
 
-    print( 'rows:', rows, 'cols:', cols, 'xOff:', xOff, 'yOff:', yOff, 'snakeDir:', snakeDir)
-    print( 'im sz:', (imW, imH))
-    print( 'input dir:', cfg['inDir'])
-    print( 'CATMAID dir:', cfg['outDir'])
-    print ('image dir:', imDir)
-    print ('maxPeakX, Y, XY:', maxPeakX, maxPeakY, maxPeakXY)
-    print ('weight power:', weightPwr)
-    print ('peak radius:', peakRadius)
-    print ('fix NaNs?', fixNaN)
-    print ('background subtraction ', bgSub)
-    print ('im out sz:', (outWidth, outHeight))
+    print('rows:', rows, 'cols:', cols, 'xOff:', xOff, 'yOff:', yOff, 'snakeDir:', snakeDir)
+    print('im sz:', (imW, imH))
+    print('input dir:', cfg['inDir'])
+    print('CATMAID dir:', cfg['outDir'])
+    print('image dir:', imDir)
+    print('maxPeakX, Y, XY:', maxPeakX, maxPeakY, maxPeakXY)
+    print('weight power:', weightPwr)
+    print('peak radius:', peakRadius)
+    print('fix NaNs?', fixNaN)
+    print('background subtraction ', bgSub)
+    print('im out sz:', (outWidth, outHeight))
     
     imData = [(f, c[0] - coords[0][0], c[1] - coords[0][1]) for f, c in zip(imFiles, coords)]
     if usePoslist == 0:
