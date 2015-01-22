@@ -39,6 +39,7 @@ inDir                               | directory with poslist file; file name mus
 outDir                              | output directory for CATMAID
 projName                            | project name for CATMAID
 zoomLvls                            | number of zoom levels
+imgRegex                            | naming format of images being stitched
 
 
 Optional parameter                  | Description | Default
