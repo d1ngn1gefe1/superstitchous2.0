@@ -39,12 +39,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir);$(SolutionDir)\libtiff\;$(OPENCV_DIR2)\include;$(SolutionDir)\fftw\dll;$(BOOST_ROOT)\include\boost-1_57;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\libtiff;$(SolutionDir)\fftw\dll;$(OPENCV_DIR2)\x64\vc12\lib;$(BOOST_ROOT)\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(SolutionDir);$(SolutionDir)\libtiff\;$(OPENCV_DIR)\include;$(SolutionDir)\fftw\dll;$(BOOST_ROOT)\;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\libtiff;$(SolutionDir)\fftw\dll;$(OPENCV_DIR)\x64\vc12\lib;$(BOOST_ROOT)\lib64-msvc-12.0;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir);$(SolutionDir)\libtiff\;$(OPENCV_DIR2)\include;$(SolutionDir)\fftw\dll;$(BOOST_ROOT)\include\boost-1_57;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\libtiff;$(SolutionDir)\fftw\dll;$(OPENCV_DIR2)\x64\vc12\lib;$(BOOST_ROOT)\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(SolutionDir);$(SolutionDir)\libtiff\;$(OPENCV_DIR)\include;$(SolutionDir)\fftw\dll;$(BOOST_ROOT)\;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\libtiff;$(SolutionDir)\fftw\dll;$(OPENCV_DIR)\x64\vc12\lib;$(BOOST_ROOT)\lib64-msvc-12.0;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

@@ -124,6 +124,10 @@ def stitching(fin):
     imDir = join(cfg['outDir'], STACK_NAME, '0')
     mkdir(cfg['outDir'])
     mkdir(imDir)
+    imH, imW = im.shape
+    imDir = join(cfg['outDir'], STACK_NAME, '0')
+    mkdir(cfg['outDir'])
+    mkdir(imDir)
     if skipAlign:
         maxPeakX = cfg.get('maxPeakX', float(imW - xOff) / imW * 0.2 * math.sqrt(imW * imH))
         maxPeakY = cfg.get('maxPeakY', float(imH - yOff) / imH * 0.2 * math.sqrt(imW * imH))
@@ -148,17 +152,17 @@ def stitching(fin):
     fixNaN = int(cfg.get('fixNaN', 1))
     bgSub = cfg.get('bgSub', 0)
 
-    print( 'rows:', rows, 'cols:', cols, 'xOff:', xOff, 'yOff:', yOff, 'snakeDir:', snakeDir)
-    print( 'im sz:', (imW, imH))
-    print( 'input dir:', cfg['inDir'])
-    print( 'CATMAID dir:', cfg['outDir'])
-    print ('image dir:', imDir)
-    print ('maxPeakX, Y, XY:', maxPeakX, maxPeakY, maxPeakXY)
-    print ('weight power:', weightPwr)
-    print ('peak radius:', peakRadius)
-    print ('fix NaNs?', fixNaN)
-    print ('background subtraction ', bgSub)
-    print ('im out sz:', (outWidth, outHeight))
+    print('rows:', rows, 'cols:', cols, 'xOff:', xOff, 'yOff:', yOff, 'snakeDir:', snakeDir)
+    print('im sz:', (imW, imH))
+    print('input dir:', cfg['inDir'])
+    print('CATMAID dir:', cfg['outDir'])
+    print('image dir:', imDir)
+    print('maxPeakX, Y, XY:', maxPeakX, maxPeakY, maxPeakXY)
+    print('weight power:', weightPwr)
+    print('peak radius:', peakRadius)
+    print('fix NaNs?', fixNaN)
+    print('background subtraction ', bgSub)
+    print('im out sz:', (outWidth, outHeight))
     
     imData = [(f, c[0] - coords[0][0], c[1] - coords[0][1]) for f, c in zip(imFiles, coords)]
     if skipAlign==False: 
