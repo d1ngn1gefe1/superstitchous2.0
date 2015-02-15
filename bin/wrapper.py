@@ -51,7 +51,7 @@ def saveZoomedIms(folder, zoomLvls=6, verbose=True):
         if verbose:
             print( ' '.join(str(a) for a in args))
 
-    for zoom in xrange(zoomLvls):
+    for zoom in range(zoomLvls):
         printV('--- generating zoom %d ---' % (zoom + 1))
         gridW = len(glob(getPath('0_*_%d.jpg' % zoom)))
         gridH = len(glob(getPath('*_0_%d.jpg' % zoom)))
@@ -59,8 +59,8 @@ def saveZoomedIms(folder, zoomLvls=6, verbose=True):
         printV('gridW:', gridW, 'gridH:', gridH)
 
         size = None
-        for x in xrange(0, gridW, 2):
-            for y in xrange(0, gridH, 2):
+        for x in range(0, gridW, 2):
+            for y in range(0, gridH, 2):
                 ims = []
                 for dy in (0, 1):
                     for dx in (0, 1):
@@ -92,19 +92,21 @@ def getPxSize(folder):
 
 def makeOrderedImData(dat, snakeDir, szInIms):
     """Rearrange items in dat, whose elements are in a snake shape, into row-major order. Return new array."""
+    xDIM = szInIms[0]
+    yDIM = szInIms[1]
     arr = []
-    for i in range(szInIms[1]):
-        for j in range(szInIms[0]):
+    for i in range(yDIM):
+        for j in range(xDIM):
             if snakeDir == 'col':
-                ind = j * szInIms[1]
+                ind = j * yDIM
                 if j % 2:
-                    ind += szInIms[1] - i - 1
+                    ind += yDIM - i - 1
                 else:
                     ind += i
             elif snakeDir == 'row':
-                ind = i * szInIms[0];
+                ind = i * xDIM
                 if i % 2:
-                    ind += szInIms[0] - j - 1
+                    ind += xDIM - j - 1
                 else:
                     ind += j;
             else:
@@ -112,34 +114,17 @@ def makeOrderedImData(dat, snakeDir, szInIms):
                 sys.exit(1)
             arr.append(dat[ind])
     return arr
-      
-def stitching(fin):
-    print(fin)
-    cfg = json.load(open(fin))
-    imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None))
-    #sanity checks
-    #Named either *S or *SLIM, its hard-coded, but not really because its a scripting language
-<<<<<<< HEAD
-    tryone=glob(join(cfg['inDir'], '*S*.tif'))
-    trytwo=glob(join(cfg['inDir'], '*DPM*.tif'))
-=======
-    tryone=glob(join(cfg['inDir'], 'Matlab*.tif'))
-    trytwo=glob(join(cfg['inDir'], '*SLIM.tif'))
->>>>>>> ef2ee542cde70592ee780f464565be528b898a1b
-    if not tryone:
-        useme = trytwo
-    else:
-        useme = tryone
-    
-    im = misc.imread(useme[0])
-    imH, imW = im.shape
 
+def stitching(fin):
+    cfg = json.load(open(fin))
+    skipAlign = cfg.get('skipAlign', False)
+    imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None))
+    im = misc.imread(imFiles[0])
+    imH, imW = im.shape
     imDir = join(cfg['outDir'], STACK_NAME, '0')
     mkdir(cfg['outDir'])
     mkdir(imDir)
-
-    usePoslist = cfg.get('usePoslist', 0)
-    if usePoslist == 0:
+    if skipAlign:
         maxPeakX = cfg.get('maxPeakX', float(imW - xOff) / imW * 0.2 * math.sqrt(imW * imH))
         maxPeakY = cfg.get('maxPeakY', float(imH - yOff) / imH * 0.2 * math.sqrt(imW * imH))
         maxPeakXY = cfg.get('maxPeakXY', float((imW - xOff) * (imH - yOff)) / (imW * imH) * 0.2 * math.sqrt(imW * imH))
@@ -152,8 +137,8 @@ def stitching(fin):
         maxPeakY = -1
         maxPeakXY = -1
 
-    outWidth = cfg.get('outWidth',4096)
-    outHeight = cfg.get('outHeight',4096)
+    outWidth = cfg.get('outWidth',1024)
+    outHeight = cfg.get('outHeight',1024)
                         
     weightPwr = cfg.get('weightPwr', 1)
     weightPwr = cfg.get('weightPwr', 1)    
@@ -176,20 +161,22 @@ def stitching(fin):
     print ('im out sz:', (outWidth, outHeight))
     
     imData = [(f, c[0] - coords[0][0], c[1] - coords[0][1]) for f, c in zip(imFiles, coords)]
-    if usePoslist == 0:
+    if skipAlign==False: 
+        if(snakeDir=='none'):
+            err("All poslists for aligment should be ordered in snake fashion")
         imData = makeOrderedImData(imData, snakeDir, (cols, rows))
-
+    else:
+        print('Using a known position list')
+    
     # write image data
     tmpFd, tmpPath = tempfile.mkstemp()
     imglist = '\n'.join(' '.join(map(str, dat)) for dat in imData)
     os.write(tmpFd, bytes(imglist,'UTF-8'))
-   # os.close(tmpFd)
-
     args = []
     if platform.system() == 'Windows':
         args.append(r'..\vsproject\superstitchous2013\x64\Release\stitching.exe')
     else:
-        args.append(r'./main.exe')
+        args.append(r'./stitching')
 #        args.append(r'../src/stiching')
     args += [
             tmpPath,
@@ -204,7 +191,7 @@ def stitching(fin):
             cfg.get('cacheSz', 50),
             imW,
             imH,
-            usePoslist,
+            skipAlign,
             weightPwr,
             peakRadius,
             fixNaN,

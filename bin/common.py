@@ -29,16 +29,33 @@ def parsePoslist(poslistLines, poslistDir):
     imFiles = []
     coords = []
     for l in poslistLines:
+        #print(l)
         if l.strip().startswith('#') or l.strip().startswith('dim = '):
             continue
-
         imName = re.search(r'\w+\.tiff?', l).group(0)
         imFiles.append(os.path.abspath(join(poslistDir, imName)))
 
         coMatch = re.search(r'([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)(?:,|\s)+([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)', l)
         coords.append((float(coMatch.group(1)), float(coMatch.group(2))))
     
-    if coords[0][0] == coords[1][0]:
+    #Todo add support stitching a regularly spaced list 
+    '''
+    posA=coords[0][0]
+    posB=coords[1][0]
+    posC=coords[2][0]
+    posAA=coords[0][1]
+    posBB=coords[1][1]
+    posCC=coords[2][1]
+    print(posA,posB,posC)
+    print(posAA,posBB,posCC)
+#   print(posA,posB)
+#   print(posC,posD)
+    '''
+    #snakedir = 'col' means 1st dim is constant for a row
+    #snakedir = 'row' means 2nd dim is constant for a row
+    rowFirstDim = (coords[0][0] == coords[1][0])
+    rowSecondDim = (coords[0][1] == coords[1][1])
+    if rowFirstDim:
         snakeDir = 'col'
         rows = len(list(takewhile(lambda c: c[0] == coords[0][0], coords)))
         cols = math.ceil(len(coords) / rows) #Change for python3
@@ -47,7 +64,7 @@ def parsePoslist(poslistLines, poslistDir):
             xOff = 0
         else:
             xOff = coords[rows][0] - coords[0][0]
-    elif coords[0][1] == coords[1][1]:
+    elif rowSecondDim:
         snakeDir = 'row'
         cols = len(list(takewhile(lambda c: c[1] == coords[0][1], coords)))
         rows = math.ceil(len(coords) / cols)

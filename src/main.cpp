@@ -27,7 +27,7 @@
 
 #define STR(a) #a
 #define R(var, re)  static char var##_[] = STR(re);\
- const char * var = ( var##_[ sizeof(var##_) - 2] = '\0',  (var##_ + 1) );
+					   const char * var = ( var##_[ sizeof(var##_) - 2] = '\0',  (var##_ + 1) );
 
 using namespace std;
 void checkforfile(const string& name) // throws IOException() just like teh java
@@ -142,7 +142,7 @@ class UserInput
 			throw std::runtime_error(errormsg.c_str());
 		}
 	}
-public:
+	public:
 	string outDir, poslist;
 	bool usePoslist;
 	float xOff, yOff;
@@ -218,7 +218,7 @@ void loadImgData(const UserInput& input, vector<string> &out, LSQRVectors &trans
 		string line;
 		//http://stackoverflow.com/questions/3978351/how-to-avoid-backslash-escape-when-writing-regular-expression-in-c-c
 		R(re, "(.*?.tif)[^0-9\r\n\-\+]+([-+]?[0-9]*\.?[0-9]+)[^0-9\r\n\-\+]+([-+]?[0-9]*\.?[0-9]+)");
-		std::regex matchme(re);
+		static std::regex matchme(re);
 		auto isZero = [](float val){ return (val < FLT_EPSILON) && ((val > -FLT_EPSILON)); };
 		while (getline(f, line)) {
 			std::cmatch res;
@@ -245,18 +245,18 @@ void loadImgData(const UserInput& input, vector<string> &out, LSQRVectors &trans
 			}
 		}
 		/*
-		assert(givenTrans.size() == imPaths.size() - 1); // You push one for every file so why should they be different????, this could only happen if one position was exactly zero?
-		auto one = trans.size();
-		auto two = out.size();
-		if (one != two - 1)
-		{
-		throw std::exception("Exactly one point must be on (0,0)");//?
-		}//I'm confuzzled by this
-		*/
-		if (out.size() != input.szInIms.area())
+		   assert(givenTrans.size() == imPaths.size() - 1); // You push one for every file so why should they be different????, this could only happen if one position was exactly zero?
+		   auto one = trans.size();
+		   auto two = out.size();
+		   if (one != two - 1)
+		   {
+		   throw std::exception("Exactly one point must be on (0,0)");//?
+		   }//I'm confuzzled by this
+		   */
+		if (out.size() != input.szInIms.area())//apprently area can be a int?
 		{
 			auto msg = string("Not enough images: expecting ") + std::to_string(input.szInIms.area()) + " but found " + std::to_string(out.size());
-			throw std::runtime_error(msg.c_str());//?
+			//	throw std::runtime_error(msg.c_str());//?
 		}
 	}
 	catch (std::exception& e)
@@ -267,15 +267,16 @@ void loadImgData(const UserInput& input, vector<string> &out, LSQRVectors &trans
 }
 
 void writePoslist(const string &file, const vector<float> &xs, const vector<float> &ys, const ImgFetcher &fetch) {
-	assert(xs.size() == fetch.szInIms.area() && ys.size() == fetch.szInIms.area());
-
-	FILE *f = fopenWrap(file.c_str(), "w");
-	for (int i = 0; i < xs.size(); i++) 
+	if(xs.size() == fetch.szInIms.area() && ys.size() == fetch.szInIms.area())
 	{
-		fprintf(f, "%s; ; (%f, %f)\n", fetch.imgPaths[i].c_str(), xs[i], ys[i]);
+		FILE *f = fopenWrap(file.c_str(), "w");
+		for (int i = 0; i < xs.size(); i++) 
+		{
+			fprintf(f, "%s; ; (%f, %f)\n", fetch.imgPaths[i].c_str(), xs[i], ys[i]);
+		}
+		fclose(f);
+		printf("wrote poslist at: %s\n", file.c_str());
 	}
-	fclose(f);
-	printf("wrote poslist at: %s\n", file.c_str());
 }
 
 void writeWeights(const string &file, const PairToTransData &transMap) {
@@ -304,8 +305,7 @@ int main(int argc, const char *argv[])
 	vector<string> imPaths;
 	LSQRVectors givenTrans;
 	loadImgData(u, imPaths, givenTrans,u.usePoslist);
-
-	auto noppp = givenTrans.size();
+	//auto noppp = givenTrans.size();
 
 	// end argument parsing
 	// background subtraction
@@ -316,6 +316,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 	fftwf_plan_with_nthreads(4);
+	
 
 	ImgFetcher fetch(imPaths, u.szInIms, u.cacheSz, u.fixNaNs);
 	LSQRVectors newTrans(fetch.szInIms);
@@ -361,7 +362,7 @@ int main(int argc, const char *argv[])
 
 		storeNewVecs(transMap, fetch.szInIms, A, b, newTrans);
 	}
-
+	
 	// the actual positions of all images in imPaths
 	vector<float> xs;
 	vector<float> ys;
@@ -386,7 +387,6 @@ int main(int argc, const char *argv[])
 	printf("wrote info at: %s\n", infoFile.c_str());
 
 	// linear blending & tile generation
-	//Size tileSz(4096, 4096); // size of output tile in pixels
 	TimeSlice tt("Rasterbation:");
 	TileHolder tiles(imPaths, xs, ys, u.imSz, u.tileSz);
 	Mat tile;

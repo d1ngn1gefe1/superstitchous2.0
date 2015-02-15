@@ -31,9 +31,9 @@ public:
 		return chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
 	}
 private:
-	const bool silent;
-	const long long start;
 	const std::string name;
+	const long long start;
+	const bool silent;
 	static inline void fency()
 	{
 		std::atomic_signal_fence(std::memory_order_seq_cst);
