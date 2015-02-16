@@ -20,7 +20,7 @@ def err(s, code=1):
     print( s)
     sys.exit(code)
 
-def parsePoslist(poslistLines, poslistDir):
+def parsePoslist(poslistLines, poslistDir,ratio):
     """
     Parse a poslist file and return:
     
@@ -34,9 +34,8 @@ def parsePoslist(poslistLines, poslistDir):
             continue
         imName = re.search(r'\w+\.tiff?', l).group(0)
         imFiles.append(os.path.abspath(join(poslistDir, imName)))
-
         coMatch = re.search(r'([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)(?:,|\s)+([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)', l)
-        coords.append((float(coMatch.group(1)), float(coMatch.group(2))))
+        coords.append((float(coMatch.group(1))*ratio, ratio*float(coMatch.group(2))))
     
     #Todo add support stitching a regularly spaced list 
     '''
@@ -81,16 +80,16 @@ def parsePoslist(poslistLines, poslistDir):
         yOff = -1
     return imFiles, coords, snakeDir, cols, rows, xOff, yOff
 
-def parsePoslistDir(poslistDir, poslistPath=None):
+def parsePoslistDir(poslistDir, poslistPath,ratio):
     if poslistPath is None:
         files = glob(join(poslistDir, '*poslist'))
         if len(files) > 1:
             err('err: more than one poslist file')
         poslistPath = files[0]
     else:
-        poslistPath = join(poslistDir, poslistPath)
+        poslistPath = poslistPath
 
-    return parsePoslist(open(poslistPath).read().splitlines(), poslistDir)
+    return parsePoslist(open(poslistPath).read().splitlines(), poslistDir,ratio)
 
 def getImgI(x, y, rows):
     i = x * rows
@@ -99,3 +98,19 @@ def getImgI(x, y, rows):
     else:
         i += y
     return i
+
+def toAbsolutePath(partialfile):
+    fullpath=os.path.abspath(partialfile)
+    #Somekind of error correction goes here
+    return fullpath
+    
+#class TileFormatCatmaid(object):
+#     #provides format specific tile information
+#    
+#    def filenames(row,col,zoom):        
+#        return '%d_%d_%d.jpg' % (row,col,zoom)
+#    
+#    def count(dim,zoom):
+#        selector=['0_*_%d.jpg','*_0_%d.jpg']   
+#        return len(glob(getPath(selector[dim] % zoom)));
+#    

@@ -1,0 +1,20 @@
+# Define the number of dimensions we are working on
+dim = 2
+
+# Define the image coordinates
+image_1_3691_S.tif; ; (0.0, 0.0)
+image_1_3692_S.tif; ; (0.0, 0.0)
+image_1_3693_S.tif; ; (0.0, 0.0)
+image_1_3694_S.tif; ; (0.0, 0.0)
+image_1_3869_S.tif; ; (0.0, 0.0)
+image_1_3870_S.tif; ; (0.0, 0.0)
+image_1_3871_S.tif; ; (0.0, 0.0)
+image_1_3872_S.tif; ; (0.0, 0.0)
+image_1_3935_S.tif; ; (0.0, 0.0)
+image_1_3936_S.tif; ; (0.0, 0.0)
+image_1_3937_S.tif; ; (0.0, 0.0)
+image_1_3938_S.tif; ; (0.0, 0.0)
+image_1_4113_S.tif; ; (0.0, 0.0)
+image_1_4114_S.tif; ; (0.0, 0.0)
+image_1_4115_S.tif; ; (0.0, 0.0)
+image_1_4116_S.tif; ; (0.0, 0.0)

@@ -1,3 +1,7 @@
+#probably shouldn't illegally distribute
+ZoomifyImageViewerExpress-min.js
+#ignore test data outputdirs
+output
 #ignore the binary
 stitching
 #For CMAKE

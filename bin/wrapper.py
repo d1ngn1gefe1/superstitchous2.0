@@ -3,9 +3,11 @@ import sys
 import math
 import json
 import os
+import shutil 
 import platform
 import re
 from glob import glob
+import distutils.core
 from subprocess import call
 import tempfile
 import numpy as np
@@ -13,8 +15,8 @@ import scipy.signal as sig
 from scipy import misc
 from PIL import Image, ImageFile
 from common import *
-import argparse
-
+import argparse    
+    
 STACK_NAME = 'stack1'
 
 # zoom level to use for the small image to segment cores with
@@ -33,6 +35,7 @@ def getWinSize(im, padFactor=4):
     return round(float(im.shape[1]) / maxHorizI), round(float(im.shape[0]) / maxVertI)
 
 def dirtyWriteImage(name,image):
+    #Wrapper around an OpenCV bug
     #http://stackoverflow.com/questions/6788398/how-to-save-progressive-jpeg-using-python-pil-1-1-7
     img=Image.fromarray(image)
     q=80
@@ -42,29 +45,62 @@ def dirtyWriteImage(name,image):
         ImageFile.MAXBLOCK = img.size[0] * img.size[1]
         img.save(name, "JPEG", quality=q, optimize=True, progressive=True)              
 
-def saveZoomedIms(folder, zoomLvls=6, verbose=True):
+def saveZoomedIms(folder, zoomLvls,raster, verbose=True):
     """zoomLvls is the highest x in "*_*_x.jpg"."""
+    #CATMAID in ROW_COL_ZOOM.jpg, zoom = 0 is zoomed in
+    #Zoomify in ZOOM-ROW-COL.jpg, zoom = 0 is zoomed out 
     def getPath(name):
         return join(folder, name)
 
     def printV(*args):
         if verbose:
             print( ' '.join(str(a) for a in args))
+        
+    def filenames(row,col,zoom):
+        if raster=="CATMAID":
+            namestring='%d_%d_%d.jpg'
+            return namestring % (row,col,zoom)
+        if raster=="ZOOMIFY":
+            namestring='%d-%d-%d.jpg'
+            return namestring  % (zoomLvls-zoom-1,col,row)
+    
+    def count(dim,zoom):
+        if raster=="CATMAID":
+            selector=['0_*_%d.jpg','*_0_%d.jpg']
+            return len(glob(getPath(selector[dim] % zoom)))
+        if raster=="ZOOMIFY":
+            selector=['%d-*-0.jpg','%d-0-*.jpg']
+            what = getPath(selector[dim] % (zoomLvls-zoom-1))
+            return len(glob(what))
 
-    for zoom in range(zoomLvls):
-        printV('--- generating zoom %d ---' % (zoom + 1))
-        gridW = len(glob(getPath('0_*_%d.jpg' % zoom)))
-        gridH = len(glob(getPath('*_0_%d.jpg' % zoom)))
-
+    #dirty hack to fix the names
+    if raster=="ZOOMIFY":
+        defaultselector=['0_*_%d.jpg','*_0_%d.jpg']
+        defaultnamer='%d_%d_%d.jpg'
+        zoom=0
+        gridW= len(glob(getPath(defaultselector[0] % zoom)))
+        gridH = len(glob(getPath(defaultselector[1] % zoom)))
+        for x in range(0,gridW):
+            for y in range(0,gridH):
+                name = getPath(defaultnamer %(y,x,zoom))
+                newname = getPath(filenames(y,x,zoom))
+                #os.rename(name,newname) fails when file already exists
+                shutil.move(name,newname)
+    
+    zoomrange = range(0,zoomLvls-1,1)#Zoom 1 is already done
+    print(zoomrange)
+    for zoom in zoomrange:
+        printV('--- generating zoom %d ---' % (zoom))
+        gridW =count(0,zoom)
+        gridH =count(1,zoom)
         printV('gridW:', gridW, 'gridH:', gridH)
-
         size = None
         for x in range(0, gridW, 2):
             for y in range(0, gridH, 2):
                 ims = []
                 for dy in (0, 1):
                     for dx in (0, 1):
-                        name = getPath('%d_%d_%d.jpg' % (y + dy, x + dx, zoom))
+                        name = getPath(filenames(y + dy, x + dx, zoom))
                         printV('read', name)
                         try:
                             im = misc.imread(name)
@@ -79,15 +115,15 @@ def saveZoomedIms(folder, zoomLvls=6, verbose=True):
                 scaled = np.concatenate((np.concatenate((ims[0], ims[1]), 1), np.concatenate((ims[2], ims[3]), 1)), 0)
                 scaled = scaled.astype('uint8')
 
-                name = getPath('%d_%d_%d.jpg' % (y / 2, x / 2, zoom + 1))
+                name = getPath(filenames(y / 2, x / 2, zoom + 1))
                 printV('saving', name)
                 dirtyWriteImage(name,scaled)
+                
 #                misc.imsave(name, scaled)
-
-def getPxSize(folder):
-    gridW = len(glob(join(folder, '0_*_0.jpg')))
-    gridH = len(glob(join(folder, '*_0_0.jpg')))
-    pxH, pxW = misc.imread(join(folder, '0_0_0.jpg')).shape
+    gridW =count(0,0)
+    gridH =count(1,0)
+    first=getPath(filenames(0, 0, 0))
+    pxH, pxW = misc.imread(first).shape
     return pxW * gridW, pxH * gridH
 
 def makeOrderedImData(dat, snakeDir, szInIms):
@@ -115,10 +151,26 @@ def makeOrderedImData(dat, snakeDir, szInIms):
             arr.append(dat[ind])
     return arr
 
+def fixJsonPaths(cfg):
+    convert = ['inDir','outDir','poslist']
+    for name in convert:
+        if (name in cfg):
+            cfg[name]=toAbsolutePath(cfg[name])
+#            if os.path.exists(abspath):
+#                cfg[name]=abspath
+#            else:
+#                err("Can't find %s" % abspath)
+    if os.path.exists(cfg['outDir']):
+        err("Output path already exists, please clear before continuing")
+        
+    return cfg
+
 def stitching(fin):
     cfg = json.load(open(fin))
-    skipAlign = cfg.get('skipAlign', False)
-    imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None))
+    cfg = fixJsonPaths(cfg)
+    skipAlign = cfg.get('skipAlign', 0)
+    raster = cfg.get("rasterFormat","CATMAID")
+    imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None),cfg.get('pixelRatio',1))
     im = misc.imread(imFiles[0])
     imH, imW = im.shape
     imDir = join(cfg['outDir'], STACK_NAME, '0')
@@ -128,7 +180,8 @@ def stitching(fin):
     imDir = join(cfg['outDir'], STACK_NAME, '0')
     mkdir(cfg['outDir'])
     mkdir(imDir)
-    if skipAlign:
+    zoomlevels = cfg.get('zoomLvls') #user inputs 3 they expect 3 levels, not 4, consider 1 as corner case input
+    if skipAlign==0:
         maxPeakX = cfg.get('maxPeakX', float(imW - xOff) / imW * 0.2 * math.sqrt(imW * imH))
         maxPeakY = cfg.get('maxPeakY', float(imH - yOff) / imH * 0.2 * math.sqrt(imW * imH))
         maxPeakXY = cfg.get('maxPeakXY', float((imW - xOff) * (imH - yOff)) / (imW * imH) * 0.2 * math.sqrt(imW * imH))
@@ -143,12 +196,14 @@ def stitching(fin):
 
     outWidth = cfg.get('outWidth',1024)
     outHeight = cfg.get('outHeight',1024)
+    if ((outWidth != outHeight) and (raster=="ZOOMIFY")):
+        err("Zoomify requires squre output tiles")
                         
     weightPwr = cfg.get('weightPwr', 1)
     weightPwr = cfg.get('weightPwr', 1)    
     
     weightPwr = cfg.get('weightPwr', 1)
-    peakRadius = cfg.get('peakRadius', 0)
+    peakRadius = cfg.get('peakRadius', 1)
     fixNaN = int(cfg.get('fixNaN', 1))
     bgSub = cfg.get('bgSub', 0)
 
@@ -165,7 +220,7 @@ def stitching(fin):
     print('im out sz:', (outWidth, outHeight))
     
     imData = [(f, c[0] - coords[0][0], c[1] - coords[0][1]) for f, c in zip(imFiles, coords)]
-    if skipAlign==False: 
+    if skipAlign==0: 
         if(snakeDir=='none'):
             err("All poslists for aligment should be ordered in snake fashion")
         imData = makeOrderedImData(imData, snakeDir, (cols, rows))
@@ -201,68 +256,82 @@ def stitching(fin):
             fixNaN,
             bgSub,
             outWidth,
-            outHeight
+            outHeight,
+            int(cfg.get('writeJPG', 1)),
+            int(cfg.get('writeTIF', 1)),
+            float(cfg.get('colormapMin', -.3)),
+            float(cfg.get('colormapMax', 0.7)),
             ]
     args = list(map(str, args)) #for Python 3
 ##  args = ['gdb', '--args'] + args
     print( ' '.join(args))
-    quit()
 #    print(args[0])
-    if call(args) != 0:
-        os.remove(tmpPath)
+    codes = call(args)
+    if  codes != 0:
+        print("Stitching returned an error: %d" %codes)
         sys.exit(1)
+        
+    pxW, pxH = saveZoomedIms(imDir, zoomlevels,raster)
+    if (raster=="CATMAID"): #other modes not yet supported
+        # write small.jpg: icon image for catmaid
+        im = misc.imread(join(imDir, '0_0_%d.jpg' % zoomlevels))
+        if len(im) > len(im[0]):
+            # height > width
+            im = misc.imresize(im, 256. / len(im))
+            padLen = (256 - len(im[0])) / 2
+            im = np.pad(im, ((0, 0), (padLen, padLen)), mode='constant')
+        else:
+            im = misc.imresize(im, 256. / len(im[0]))
+            padLen = (256 - len(im)) / 2
+            im = np.pad(im, ((padLen, padLen), (0, 0)), mode='constant')
+            print ('writing small.jpg')
+            misc.imsave(join(cfg['outDir'], STACK_NAME, '0', 'small.jpg'), im)
 
-    os.remove(tmpPath) #Should use RAII mechanism
+        # write project.yaml file
+        projStr = open('project.yaml').read()
+        projStr = projStr.replace('{NAME}', cfg['projName'])
+        print ('total pixel width/height: %d/%d' % (pxW, pxH))
+        projStr = projStr.replace('{W_PX}', str(pxW))
+        projStr = projStr.replace('{H_PX}', str(pxH))
+        projStr = projStr.replace('{ZOOMS}', str(zoomlevels))
+        open(join(cfg['outDir'], 'project.yaml'), 'w').write(projStr)
 
-    saveZoomedIms(imDir, cfg['zoomLvls'])
-
-    pxW, pxH = getPxSize(imDir)
-
-    # write small.jpg: icon image for catmaid
-    im = misc.imread(join(imDir, '0_0_%d.jpg' % cfg['zoomLvls']))
-    if len(im) > len(im[0]):
-        # height > width
-        im = misc.imresize(im, 256. / len(im))
-        padLen = (256 - len(im[0])) / 2
-        im = np.pad(im, ((0, 0), (padLen, padLen)), mode='constant')
-    else:
-        im = misc.imresize(im, 256. / len(im[0]))
-        padLen = (256 - len(im)) / 2
-        im = np.pad(im, ((padLen, padLen), (0, 0)), mode='constant')
-    print ('writing small.jpg')
-    misc.imsave(join(cfg['outDir'], STACK_NAME, '0', 'small.jpg'), im)
-
-    # write project.yaml file
-    projStr = open('project.yaml').read()
-    projStr = projStr.replace('{NAME}', cfg['projName'])
-    print ('total pixel width/height: %d/%d' % (pxW, pxH))
-    projStr = projStr.replace('{W_PX}', str(pxW))
-    projStr = projStr.replace('{H_PX}', str(pxH))
-    projStr = projStr.replace('{ZOOMS}', str(cfg['zoomLvls']))
-    open(join(cfg['outDir'], 'project.yaml'), 'w').write(projStr)
-
-    if cfg['zoomLvls'] >= SMALL_ZOOM:
-        ## save cropped image for core segmentation
-        im = misc.imread(join(imDir, '0_0_%d.jpg' % SMALL_ZOOM))
-        info = open(join(cfg['outDir'], STACK_NAME, '0', 'info.txt')).read()
-        w, h = re.findall(r'total size: (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)', info)[0]
-        w = float(w)
-        h = float(h)
-        print ('actual dims: (%s, %s)' % (w, h))
-        w = round(w / (2 ** SMALL_ZOOM))
-        h = round(h / (2 ** SMALL_ZOOM))
-        print ('cropped dims: (%s, %s)' % (w, h))
-        im = im[:h, :w]
-        print ('saving cropped.jpg')
-        misc.imsave(join(imDir, 'cropped.jpg'), im)
-
-##        print 'window size:', getWinSize(im)
+        if zoomlevels >= SMALL_ZOOM:
+            ## save cropped image for core segmentation
+            im = misc.imread(join(imDir, '0_0_%d.jpg' % SMALL_ZOOM))
+            info = open(join(cfg['outDir'], STACK_NAME, '0', 'info.txt')).read()
+            w, h = re.findall(r'total size: (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)', info)[0]
+            w = float(w)
+            h = float(h)
+            print ('actual dims: (%s, %s)' % (w, h))
+            w = round(w / (2 ** SMALL_ZOOM))
+            h = round(h / (2 ** SMALL_ZOOM))
+            print ('cropped dims: (%s, %s)' % (w, h))
+            im = im[:h, :w]
+            print ('saving cropped.jpg')
+            misc.imsave(join(imDir, 'cropped.jpg'), im)
+    
+    if (raster=="ZOOMIFY"):
+        #Fix directories, copy image viewer
+        dst=cfg['outDir']
+        srcZ=toAbsolutePath("../zoomify")
+        distutils.dir_util.copy_tree(srcZ,dst,verbose=False)
+        srcFold=cfg['outDir']+("//%s//0"%STACK_NAME)
+        dstFold=cfg['outDir']+("//%s//TileGroup0"%STACK_NAME)
+        shutil.move(srcFold,dstFold)
+        dirty=r'<IMAGE_PROPERTIES WIDTH="%f" HEIGHT="%f" NUMTILES="%d" NUMIMAGES="1" VERSION="1.8" TILESIZE="%d" />'        
+        dstLabel=cfg['outDir']+("//%s//ImageProperties.xml" %STACK_NAME)
+        tiles=len(glob(dstFold+"//*-*-*.jpg"))
+        print(pxW)
+        with open(dstLabel, "w") as text_file:
+            text_file.write(dirty %(pxW,pxH,tiles,outHeight))
+        ##print 'window size:', getWinSize(im)
 
 def segmentation(fin):
     print (fin)
     cfg = json.load(open(fin))
 
-    inDir = cfg['inDir']+'/stack1/0'
+    inDir = cfg['inDir']+('/%s/0' %STACK_NAME)
     outDir = cfg['outDir']
     with open(cfg['inDir']+'/project.yaml') as yaml:
         for line in yaml:
