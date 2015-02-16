@@ -58,7 +58,6 @@
     </Link>
     <PostBuildEvent>
       <Command>set loc=$(TargetDir)
-
 echo %loc%
 COPY "$(OPENCV_DIR)\x64\vc12\bin\opencv_core300d.dll" %loc%
 COPY "$(OPENCV_DIR)\x64\vc12\bin\opencv_imgproc300d.dll" %loc%
@@ -82,11 +81,10 @@ COPY "$(SolutionDir)\fftw\dll\libfftw3f-3.dll" %loc%</Command>
     </Link>
     <PostBuildEvent>
       <Command>set loc=$(TargetDir)
-
 echo %loc%
-
-COPY "$(OPENCV_DIR)\x64\vc12\bin\opencv_world300.dll" %loc%
-
+COPY "$(OPENCV_DIR)\x64\vc12\bin\opencv_core300.dll" %loc%
+COPY "$(OPENCV_DIR)\x64\vc12\bin\opencv_imgproc300.dll" %loc%
+COPY "$(OPENCV_DIR)\x64\vc12\bin\opencv_imgcodecs300.dll" %loc%
 COPY "$(SolutionDir)\fftw\dll\libfftw3f-3.dll" %loc%</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

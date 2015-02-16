@@ -3,7 +3,7 @@
 Debugging settings for testing on Windows
 
 Args/Directory
-in.poslist output 2000 2000 4 4 10 10 10 5 2544 2160 1 0 5 1 -1
+in.poslist output 2000 2000 4 4 10 10 10 5 2544 2160 1 1 5 1 -1 1024 1204 1 1 -0.3 0.9
 $(SolutionDir)\..\..\..\bin\four
 
 */
@@ -172,7 +172,7 @@ class UserInput
 	MaxDists dists;
 	float weightPwr;
 	float bgSub;
-	bool fixNaNs, writeJPG, writeTIF, isCatmaidFormat;
+	bool fixNaNs, writeJPG, writeTIF;
 	float cMin, cMax;
 	UserInput(int argc, const char *argv[])
 	{
@@ -187,7 +187,7 @@ class UserInput
 			szInIms = getSize(argv[5], argv[6]);
 			dists = getMaxDists(argv[7], argv[8], argv[9]);
 			cacheSz = getCacheSize(argv[10]);
-			imSz = getSize(argv[11], argv[12]);
+			imSz = getSize(argv[11], argv[12]);// done as a sanity check
 			usePoslist = !strcmp(argv[13], "1");
 			weightPwr = getPower(argv[14]);
 			peakRadius = getPeakRadius(argv[15]);//conceptually flawed because the bluring does this
@@ -196,9 +196,8 @@ class UserInput
 			tileSz = getSize(argv[18], argv[19]);
 			writeJPG = getWriteJPG(argv[20]);
 			writeTIF = getWriteTIF(argv[21]);
-			isCatmaidFormat = getImageOutputFormat(argv[22]);
-			cMin = getCMin(argv[23]);
-			cMax = getCMax(argv[24]);
+			cMin = getCMin(argv[22]);
+			cMax = getCMax(argv[23]);
 		}
 		catch (std::exception &e)
 		{
@@ -216,7 +215,7 @@ class UserInput
 	}
 	void argcheck(int argc)
 	{
-		auto expected = 25;
+		auto expected = 24;
 		if (argc != expected)
 		{
 			std::string errormsg = string("Wrong number of arguments saw: ") + std::to_string(argc) + string("/") + std::to_string(expected);
@@ -241,7 +240,6 @@ class UserInput
 		os << STR(a.tileSz) << ":" << a.tileSz << std::endl;
 		os << STR(a.writeJPG) << ":" << a.writeJPG << std::endl;
 		os << STR(a.writeTIF) << ":" << a.writeTIF << std::endl;
-		os << STR(a.isCatmaidFormat) << ":" << a.isCatmaidFormat << std::endl;
 		os << STR(a.cMin) << ":" << a.cMin << std::endl;
 		os << STR(a.cMax) << ":" << a.cMax << std::endl;
 		return os;
