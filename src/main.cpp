@@ -1,3 +1,13 @@
+
+/*
+Debugging settings for testing on Windows
+
+Args/Directory
+in.poslist output 2000 2000 4 4 10 10 10 5 2544 2160 1 0 5 1 -1
+$(SolutionDir)\..\..\..\bin\four
+
+*/
+
 #include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
 #include <fftw3.h>
@@ -120,6 +130,26 @@ class UserInput
 		}
 		return (val >= 1 || val < 0) ? 0.0f : val;
 	}
+	static bool getWriteJPG(const char* in)//writeJPG, writeTIF
+	{
+		return atoi(in) ? true : false;
+	}
+	static bool getWriteTIF(const char* in)//writeJPG, writeTIF
+	{
+		return atoi(in) ? true : false;
+	}
+	static bool getImageOutputFormat(const char* in)//writeJPG, writeTIF
+	{
+		return atoi(in) ? true : false;
+	}
+	static float getCMin(const char* in)
+	{
+			return static_cast<float>(atof(in));
+	}
+	static float getCMax(const char* in)
+	{
+		return static_cast<float>(atof(in));
+	}
 	void fixup()
 	{
 		if (xOff > imSz.width || yOff > imSz.height) {
@@ -133,15 +163,6 @@ class UserInput
 			}
 		}
 	}
-	void argcheck(int argc)
-	{
-
-		if (argc != 20)
-		{
-			std::string errormsg = string("Wrong number of arguments saw: ") + std::to_string(argc);
-			throw std::runtime_error(errormsg.c_str());
-		}
-	}
 	public:
 	string outDir, poslist;
 	bool usePoslist;
@@ -151,26 +172,33 @@ class UserInput
 	MaxDists dists;
 	float weightPwr;
 	float bgSub;
-	bool fixNaNs;
+	bool fixNaNs, writeJPG, writeTIF, isCatmaidFormat;
+	float cMin, cMax;
 	UserInput(int argc, const char *argv[])
 	{
 		try
 		{
+			//poslist,outdir,useposlist,yoff,xoff,szInImsX,sizInImsY,
 			argcheck(argc);
 			poslist = setFile(argv[1]);
 			outDir = setDir(argv[2]);
-			usePoslist = !strcmp(argv[13], "1");
 			xOff = getOffset(argv[3]);
 			yOff = getOffset(argv[4]);
 			szInIms = getSize(argv[5], argv[6]);
-			cacheSz = getCacheSize(argv[10]);
 			dists = getMaxDists(argv[7], argv[8], argv[9]);
+			cacheSz = getCacheSize(argv[10]);
 			imSz = getSize(argv[11], argv[12]);
+			usePoslist = !strcmp(argv[13], "1");
 			weightPwr = getPower(argv[14]);
 			peakRadius = getPeakRadius(argv[15]);//conceptually flawed because the bluring does this
 			fixNaNs = getFixNans(argv[16]);
 			bgSub = getBGSubtract(argv[17]);
 			tileSz = getSize(argv[18], argv[19]);
+			writeJPG = getWriteJPG(argv[20]);
+			writeTIF = getWriteTIF(argv[21]);
+			isCatmaidFormat = getImageOutputFormat(argv[22]);
+			cMin = getCMin(argv[23]);
+			cMax = getCMax(argv[24]);
 		}
 		catch (std::exception &e)
 		{
@@ -186,19 +214,36 @@ class UserInput
 		//sanity checks, moved
 		fixup();
 	}
+	void argcheck(int argc)
+	{
+		auto expected = 25;
+		if (argc != expected)
+		{
+			std::string errormsg = string("Wrong number of arguments saw: ") + std::to_string(argc) + string("/") + std::to_string(expected);
+			throw std::runtime_error(errormsg.c_str());
+		}
+	}
 	friend ostream& operator<<(ostream& os, const UserInput& a)
 	{
-		os << STR(a.outDir) << ":" << a.outDir << std::endl;
 		os << STR(a.poslist) << ":" << a.poslist << std::endl;
+		os << STR(a.outDir) << ":" << a.outDir << std::endl;
 		os << STR(a.xOff) << ":" << a.xOff << std::endl;
 		os << STR(a.yOff) << ":" << a.yOff << std::endl;
 		os << STR(a.szInIms) << ":" << a.szInIms << std::endl;
-		os << STR(a.cacheSz) << ":" << a.cacheSz << std::endl;
 		os << STR(a.dists) << ":" << a.dists << std::endl;
+		os << STR(a.cacheSz) << ":" << a.cacheSz << std::endl;
+		os << STR(a.imSz) << ":" << a.imSz << std::endl;
+		os << STR(a.usePoslist) << ":" << a.usePoslist << std::endl;
 		os << STR(a.weightPwr) << ":" << a.weightPwr << std::endl;
-		os << STR(a.bgSub) << ":" << a.bgSub << std::endl;
+		os << STR(peakRadius) << ":" << peakRadius << std::endl;
 		os << STR(a.fixNaNs) << ":" << a.fixNaNs << std::endl;
+		os << STR(a.bgSub) << ":" << a.bgSub << std::endl;
 		os << STR(a.tileSz) << ":" << a.tileSz << std::endl;
+		os << STR(a.writeJPG) << ":" << a.writeJPG << std::endl;
+		os << STR(a.writeTIF) << ":" << a.writeTIF << std::endl;
+		os << STR(a.isCatmaidFormat) << ":" << a.isCatmaidFormat << std::endl;
+		os << STR(a.cMin) << ":" << a.cMin << std::endl;
+		os << STR(a.cMax) << ":" << a.cMax << std::endl;
 		return os;
 	}
 };
@@ -390,19 +435,26 @@ int main(int argc, const char *argv[])
 	TimeSlice tt("Rasterbation:");
 	TileHolder tiles(imPaths, xs, ys, u.imSz, u.tileSz);
 	Mat tile;
-	for (int j = 0; j < tiles.szInTiles.width; j++) {
-		for (int i = 0; i < tiles.szInTiles.height; i++) {
-			tiles.makeTile(makePt(j, i), fetch, tile, bgIm);
+	if (u.writeJPG || u.writeTIF)
+	{
+		for (int j = 0; j < tiles.szInTiles.width; j++) {
+			for (int i = 0; i < tiles.szInTiles.height; i++) {
+				tiles.makeTile(makePt(j, i), fetch, tile, bgIm);
 
-			ostringstream ss;
-			ss << u.outDir << "/" << i << "_" << j << "_0";
-			string s = ss.str();
-
-			saveFloatIm(s + ".jpg", tile, -0.5, 1.5);
-			saveFloatTiff(s + ".tiff", tile);
+				ostringstream ss;//Is there a better way?
+				ss << u.outDir << "/" << i << "_" << j << "_0";
+				string s = ss.str();
+				if (u.writeJPG)
+				{
+					saveFloatIm(s + ".jpg", tile, u.cMin, u.cMax);
+				}
+				if (u.writeTIF)
+				{
+					saveFloatTiff(s + ".tiff", tile);
+				}
+			}
 		}
 	}
-
 	return 0;
 }
 

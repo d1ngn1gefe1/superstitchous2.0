@@ -15,7 +15,7 @@ void imWriteWin(const string &name, const Mat &im) {
 	params.push_back(IMWRITE_JPEG_PROGRESSIVE);
 	//params.push_back(IMWRITE_JPEG_QUALITY);
 	//params.push_back(50);
-	cv::imwrite(name, im,params);
+	cv::imwrite(name, im);
 #endif
 }
 
