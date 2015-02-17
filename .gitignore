@@ -1,6 +1,3 @@
-#Don't ignore the tests
-!/bin/celltest.json
-
 #probably shouldn't illegally distribute
 ZoomifyImageViewerExpress-min.js
 #ignore test data outputdirs
@@ -36,6 +33,8 @@ bld/
 !/bin/*.py
 !/bin/project.yaml
 [Oo]bj/
+#Don't ignore the tests
+!/bin/celltest.json
 
 # Roslyn cache directories
 *.ide/

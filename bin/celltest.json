@@ -1,0 +1,18 @@
+{
+	"_comment":"HeLa cells, slightly outta focus, this sample is hard to align, check qualitative performance",
+	"inDir": "../testdata/celldata",
+	"outDir": "../testdata/celldata/output",
+	"poslist":"../testdata/celldata/test_list",
+	"pixelRatio":-6.2,
+	"zoomLvls": 3,
+      "weightPwr":0,
+	"projName": "celltest",
+	"skipAlign":false,
+	"writeTIF":false,
+	"writeJPG":true,
+	"outWidth": 512,
+	"outHeight": 512,
+	"bgSub": 0,
+    "rasterFormat": "ZOOMIFY",
+    "_rasterFormat": "CATMAID"
+}
