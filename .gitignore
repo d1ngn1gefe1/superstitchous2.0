@@ -1,3 +1,6 @@
+#Don't ignore the tests
+!/bin/celltest.json
+
 #probably shouldn't illegally distribute
 ZoomifyImageViewerExpress-min.js
 #ignore test data outputdirs
