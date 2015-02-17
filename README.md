@@ -1,6 +1,6 @@
 #Superstitchous 2.1
 ------------------
-**Purpose:** Image stitching and core segmentation software for large scale digital holography (Quantative Phase Imaging). You must cite this work by providing a reference to this page.
+**Purpose:** Image stitching and core segmentation software for large scale digital holography (Quantitative Phase Imaging). You must cite this work by providing a reference to this page.
 
 **Authors:** Kevin Han, Zelun Luo
 
