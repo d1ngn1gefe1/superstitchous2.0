@@ -6,8 +6,8 @@ import os
 #
 
 #
-#cells='bloottest.json'
-cells='celltest.json'
+cells='bloottest.json'
+#cells='celltest.json'
 proto=json.load(open(cells))
 outdir=proto.get("outDir")
 #

@@ -16,12 +16,13 @@
 	"zoomLvls": 3,
       	"weightPwr":0,
 	"projName": "celltest",
-	"skipAlign":false,
+	"skipAlign":true,
 	"writeTIF":false,
 	"writeJPG":true,
 	"outWidth": 512,
 	"outHeight": 512,
 	"bgSub": 0,
     	"rasterFormat": "ZOOMIFY",
-    	"_rasterFormat": "CATMAID"
+    	"_rasterFormat": "CATMAID",
+    "debug_cpp":false
 }

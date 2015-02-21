@@ -3,7 +3,7 @@
 Debugging settings for testing on Windows
 
 Args/Directory
-in.poslist output 2000 2000 4 4 10 10 10 5 2544 2160 1 1 5 1 -1 1024 1204 1 1 -0.3 0.9
+in.poslist output 2000 2000 4 4 10 10 10 5 2544 2160 0 1 5 1 -1 4096 4096 1 1 -0.3 0.9
 $(SolutionDir)\..\..\..\bin\four
 
 */
@@ -81,6 +81,10 @@ class UserInput
 	static float getOffset(const char* in)
 	{
 		return static_cast<float>(atof(in));
+	}
+	static bool getSkipAlign(const char* in)
+	{
+		return strcmp(in, "True") == 0;//0->the contents of both strings are equal
 	}
 	static cv::Size getSize(const char* cols, const char* rows)
 	{
@@ -165,7 +169,7 @@ class UserInput
 	}
 	public:
 	string outDir, poslist;
-	bool usePoslist;
+	bool skipAlign;
 	float xOff, yOff;
 	cv::Size szInIms, imSz, tileSz;
 	int cacheSz;
@@ -188,7 +192,7 @@ class UserInput
 			dists = getMaxDists(argv[7], argv[8], argv[9]);
 			cacheSz = getCacheSize(argv[10]);
 			imSz = getSize(argv[11], argv[12]);// done as a sanity check
-			usePoslist = !strcmp(argv[13], "1");
+			skipAlign = getSkipAlign(argv[13]);//==0 content of both strings are equal
 			weightPwr = getPower(argv[14]);
 			peakRadius = getPeakRadius(argv[15]);//conceptually flawed because the bluring does this
 			fixNaNs = getFixNans(argv[16]);
@@ -232,7 +236,7 @@ class UserInput
 		os << STR(a.dists) << ":" << a.dists << std::endl;
 		os << STR(a.cacheSz) << ":" << a.cacheSz << std::endl;
 		os << STR(a.imSz) << ":" << a.imSz << std::endl;
-		os << STR(a.usePoslist) << ":" << a.usePoslist << std::endl;
+		os << STR(a.skipAlign) << ":" << a.skipAlign << std::endl;
 		os << STR(a.weightPwr) << ":" << a.weightPwr << std::endl;
 		os << STR(peakRadius) << ":" << peakRadius << std::endl;
 		os << STR(a.fixNaNs) << ":" << a.fixNaNs << std::endl;
@@ -347,7 +351,7 @@ int main(int argc, const char *argv[])
 	// parse poslist
 	vector<string> imPaths;
 	LSQRVectors givenTrans;
-	loadImgData(u, imPaths, givenTrans,u.usePoslist);
+	loadImgData(u, imPaths, givenTrans,u.skipAlign);
 	//auto noppp = givenTrans.size();
 
 	// end argument parsing
@@ -363,7 +367,7 @@ int main(int argc, const char *argv[])
 
 	ImgFetcher fetch(imPaths, u.szInIms, u.cacheSz, u.fixNaNs);
 	LSQRVectors newTrans(fetch.szInIms);
-	if (u.usePoslist)
+	if (u.skipAlign)
 	{
 		std::cout << "Not doing aligment!" << std::endl;
 		newTrans = givenTrans;
@@ -410,7 +414,7 @@ int main(int argc, const char *argv[])
 	vector<float> xs;
 	vector<float> ys;
 	newTrans.toVecs(xs, ys);
-	if (u.usePoslist == false)//don't insert grounding point if we already know the position list
+	if (u.skipAlign == false)//don't insert grounding point if we already know the position list
 	{
 		xs.insert(xs.begin(), 0);
 		ys.insert(ys.begin(), 0);

@@ -170,7 +170,7 @@ def fixJsonPaths(cfg):
 def stitching(fin):
     cfg = json.load(open(fin))
     cfg = fixJsonPaths(cfg)
-    skipAlign = cfg.get('skipAlign', 0)
+    skipAlign = cfg.get('skipAlign', False)
     raster = cfg.get("rasterFormat","CATMAID")
     imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None),cfg.get('pixelRatio',1))
     im = misc.imread(imFiles[0])
@@ -183,19 +183,18 @@ def stitching(fin):
     mkdir(cfg['outDir'])
     mkdir(imDir)
     zoomlevels = cfg.get('zoomLvls') #user inputs 3 they expect 3 levels, not 4, consider 1 as corner case input
-    if skipAlign==0:
-        maxPeakX = cfg.get('maxPeakX', float(imW - xOff) / imW * 0.2 * math.sqrt(imW * imH))
-        maxPeakY = cfg.get('maxPeakY', float(imH - yOff) / imH * 0.2 * math.sqrt(imW * imH))
-        maxPeakXY = cfg.get('maxPeakXY', float((imW - xOff) * (imH - yOff)) / (imW * imH) * 0.2 * math.sqrt(imW * imH))
-
-        maxPeakX = max(int(round(maxPeakX)), 1)
-        maxPeakY = max(int(round(maxPeakY)), 1)
-        maxPeakXY = max(int(round(maxPeakXY)), 1)
-    else:
+    if skipAlign:
         maxPeakX = -1
         maxPeakY = -1
         maxPeakXY = -1
-
+    else:
+        maxPeakX = cfg.get('maxPeakX', float(imW - xOff) / imW * 0.2 * math.sqrt(imW * imH))
+        maxPeakY = cfg.get('maxPeakY', float(imH - yOff) / imH * 0.2 * math.sqrt(imW * imH))
+        maxPeakXY = cfg.get('maxPeakXY', float((imW - xOff) * (imH - yOff)) / (imW * imH) * 0.2 * math.sqrt(imW * imH))
+        maxPeakX = max(int(round(maxPeakX)), 1)
+        maxPeakY = max(int(round(maxPeakY)), 1)
+        maxPeakXY = max(int(round(maxPeakXY)), 1)
+    
     outWidth = cfg.get('outWidth',1024)
     outHeight = cfg.get('outHeight',1024)
     if ((outWidth != outHeight) and (raster=="ZOOMIFY")):
@@ -222,7 +221,7 @@ def stitching(fin):
     print('im out sz:', (outWidth, outHeight))
     
     imData = [(f, c[0] - coords[0][0], c[1] - coords[0][1]) for f, c in zip(imFiles, coords)]
-    if skipAlign==0: 
+    if skipAlign==False: 
         if(snakeDir=='none'):
             err("All poslists for aligment should be ordered in snake fashion")
         imData = makeOrderedImData(imData, snakeDir, (cols, rows))
@@ -267,8 +266,11 @@ def stitching(fin):
     args = list(map(str, args)) #for Python 3
 ##  args = ['gdb', '--args'] + args
     print( ' '.join(args))
-    if(cfg.get('debug_cpp',false)):
-      quit()  
+    if(cfg.get('debug_cpp',False)):
+        debugname='debug_cpp2.txt'
+        with open(debugname,'w') as f:
+            f.write(imglist)
+        sys.exit(0)  
 
     codes = call(args)
     if  codes != 0:
@@ -355,7 +357,7 @@ def segmentation(fin):
     winW = cfg.get('winW',55)
     winH = cfg.get('winH',55)
     crop = cfg.get('crop',0)
-	
+    
     print ('inDir:', inDir)
     print ('outDir:', outDir)
     print ('projName:', projName)
@@ -369,24 +371,24 @@ def segmentation(fin):
     print ('winW:', winW)
     print ('winH:', winH)
     print ('crop:', crop)
-	
+    
     args = []
     args.append(r'..\vsproject\superstitchous2013\x64\Release\segmentation.exe')
     args += [
-    		inDir,
-    		outDir,
-    		projName,
-			zoomLvls,
-			tileW,
-			tileH,
-    		gridW,
-    		gridH,
-    		coreW,
-    		coreH,
-    		winW,
-    		winH,
-			crop
-    		]
+            inDir,
+            outDir,
+            projName,
+            zoomLvls,
+            tileW,
+            tileH,
+            gridW,
+            gridH,
+            coreW,
+            coreH,
+            winW,
+            winH,
+            crop
+            ]
     args = map(str, args)
     print (' '.join(args))
 
