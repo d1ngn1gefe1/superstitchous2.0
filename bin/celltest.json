@@ -2,10 +2,19 @@
 	"_comment":"HeLa cells, slightly outta focus, this sample is hard to align, check qualitative performance",
 	"inDir": "../testdata/celldata",
 	"outDir": "../testdata/celldata/output",
-	"poslist":"../testdata/celldata/test_list",
+	"_poslist":"../testdata/celldata/test_list",
+	"poslist":
+	{
+	"rowstep":30,
+	"colstep":30,
+	"rows":4,
+	"cols":4,
+	"majordim":"cols",
+	"names":"0_0_0_%d_SLIM.tif"
+	},
 	"pixelRatio":-6.2,
 	"zoomLvls": 3,
-      "weightPwr":0,
+      	"weightPwr":0,
 	"projName": "celltest",
 	"skipAlign":false,
 	"writeTIF":false,
@@ -13,6 +22,6 @@
 	"outWidth": 512,
 	"outHeight": 512,
 	"bgSub": 0,
-    "rasterFormat": "ZOOMIFY",
-    "_rasterFormat": "CATMAID"
+    	"rasterFormat": "ZOOMIFY",
+    	"_rasterFormat": "CATMAID"
 }

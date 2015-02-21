@@ -155,7 +155,9 @@ def fixJsonPaths(cfg):
     convert = ['inDir','outDir','poslist']
     for name in convert:
         if (name in cfg):
-            cfg[name]=toAbsolutePath(cfg[name])
+            what = cfg[name]
+            if ('names' not in what):
+                cfg[name]=toAbsolutePath(what)
 #            if os.path.exists(abspath):
 #                cfg[name]=abspath
 #            else:
@@ -265,7 +267,9 @@ def stitching(fin):
     args = list(map(str, args)) #for Python 3
 ##  args = ['gdb', '--args'] + args
     print( ' '.join(args))
-#    print(args[0])
+    if(cfg.get('debug_cpp',false)):
+      quit()  
+
     codes = call(args)
     if  codes != 0:
         print("Stitching returned an error: %d" %codes)

@@ -79,6 +79,11 @@ def parsePoslist(poslistLines, poslistDir,ratio):
         xOff = -1
         yOff = -1
     return imFiles, coords, snakeDir, cols, rows, xOff, yOff
+def snake(i,c,r):
+    row = int(i/c)
+    rem = i%c
+    col= rem if (row %2==0) else (c-1)-rem
+    return (row,col)
 
 def parsePoslistDir(poslistDir, poslistPath,ratio):
     if poslistPath is None:
@@ -86,10 +91,28 @@ def parsePoslistDir(poslistDir, poslistPath,ratio):
         if len(files) > 1:
             err('err: more than one poslist file')
         poslistPath = files[0]
+    if 'names' in poslistPath:
+        lines=[]
+        cols = poslistPath.get('cols')
+        rows = poslistPath.get('rows')
+        colstep=poslistPath.get('colstep')
+        rowstep=poslistPath.get('rowstep')
+        colfirst = (poslistPath.get('majordim')=="cols")
+        namestring = poslistPath.get('names')
+        n=cols*rows
+        for n in range(n):
+            row,col = snake(n,cols,rows)
+            name = namestring %n
+            vals=[]
+            if (colfirst):
+                vals=(name,colstep*col,rowstep*row)
+            else:
+                vals=(name,rowstep*row,colstep*col)
+            lines.append('%s,%d,%d,0'% vals)
+        print(lines)
     else:
-        poslistPath = poslistPath
-
-    return parsePoslist(open(poslistPath).read().splitlines(), poslistDir,ratio)
+        lines=open(poslistPath).read().splitlines()
+    return parsePoslist(lines, poslistDir,ratio)
 
 def getImgI(x, y, rows):
     i = x * rows
