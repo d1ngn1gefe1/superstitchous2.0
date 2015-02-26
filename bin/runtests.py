@@ -4,16 +4,15 @@ import shutil
 import json
 import os
 #
-
+#from scipy import misc
+#other='/home/daniel/Desktop/Fantasy_Fudge.jpg'
+#print(misc.imread(other).shape)
 #
 cells='bloottest.json'
 #cells='celltest.json'
 proto=json.load(open(cells))
 outdir=proto.get("outDir")
 #
-skipalign=True
-switchposlist=True
-
 if os.path.exists(outdir):
     shutil.rmtree(outdir)
 wrapper.stitching(cells)

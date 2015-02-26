@@ -43,12 +43,10 @@ def dirtyWriteImage(name,image):
         img.save(name, "JPEG", quality=q, optimize=True, progressive=True)
     except IOError:
         ImageFile.MAXBLOCK = img.size[0] * img.size[1]
-        img.save(name, "JPEG", quality=q, optimize=True, progressive=True)              
-
-def saveZoomedIms(folder, zoomLvls,raster, verbose=True):
-    """zoomLvls is the highest x in "*_*_x.jpg"."""
+        img.save(name, "JPEG", quality=q, optimize=True, progressive=True)   
+           
+def saveZoomedImsCatmaid(folder, zoomLvls,raster, verbose=True):
     #CATMAID in ROW_COL_ZOOM.jpg, zoom = 0 is zoomed in
-    #Zoomify in ZOOM-ROW-COL.jpg, zoom = 0 is zoomed out 
     def getPath(name):
         return join(folder, name)
 
@@ -57,35 +55,13 @@ def saveZoomedIms(folder, zoomLvls,raster, verbose=True):
             print( ' '.join(str(a) for a in args))
         
     def filenames(row,col,zoom):
-        if raster=="CATMAID":
             namestring='%d_%d_%d.jpg'
             return namestring % (row,col,zoom)
-        if raster=="ZOOMIFY":
-            namestring='%d-%d-%d.jpg'
-            return namestring  % (zoomLvls-zoom-1,col,row)
     
     def count(dim,zoom):
-        if raster=="CATMAID":
             selector=['0_*_%d.jpg','*_0_%d.jpg']
             return len(glob(getPath(selector[dim] % zoom)))
-        if raster=="ZOOMIFY":
-            selector=['%d-*-0.jpg','%d-0-*.jpg']
-            what = getPath(selector[dim] % (zoomLvls-zoom-1))
             return len(glob(what))
-
-    #dirty hack to fix the names
-    if raster=="ZOOMIFY":
-        defaultselector=['0_*_%d.jpg','*_0_%d.jpg']
-        defaultnamer='%d_%d_%d.jpg'
-        zoom=0
-        gridW= len(glob(getPath(defaultselector[0] % zoom)))
-        gridH = len(glob(getPath(defaultselector[1] % zoom)))
-        for x in range(0,gridW):
-            for y in range(0,gridH):
-                name = getPath(defaultnamer %(y,x,zoom))
-                newname = getPath(filenames(y,x,zoom))
-                #os.rename(name,newname) fails when file already exists
-                shutil.move(name,newname)
     
     zoomrange = range(0,zoomLvls-1,1)#Zoom 1 is already done
     print(zoomrange)
@@ -119,12 +95,180 @@ def saveZoomedIms(folder, zoomLvls,raster, verbose=True):
                 printV('saving', name)
                 dirtyWriteImage(name,scaled)
                 
-#                misc.imsave(name, scaled)
+    #misc.imsave(name, scaled)
     gridW =count(0,0)
     gridH =count(1,0)
     first=getPath(filenames(0, 0, 0))
     pxH, pxW = misc.imread(first).shape
-    return pxW * gridW, pxH * gridH
+    pxW,pxH = pxW * gridW, pxH * gridH
+    # write small.jpg: icon image for catmaid
+    im = misc.imread(join(imDir, '0_0_%d.jpg' % zoomlevels))
+    if len(im) > len(im[0]):
+        # height > width
+        im = misc.imresize(im, 256. / len(im))
+        padLen = (256 - len(im[0])) / 2
+        im = np.pad(im, ((0, 0), (padLen, padLen)), mode='constant')
+    else:
+        im = misc.imresize(im, 256. / len(im[0]))
+        padLen = (256 - len(im)) / 2
+        im = np.pad(im, ((padLen, padLen), (0, 0)), mode='constant')
+        print ('writing small.jpg')
+        misc.imsave(join(cfg['outDir'], STACK_NAME, '0', 'small.jpg'), im)
+
+    # write project.yaml file
+    projStr = open('project.yaml').read()
+    projStr = projStr.replace('{NAME}', cfg['projName'])
+    print ('total pixel width/height: %d/%d' % (pxW, pxH))
+    projStr = projStr.replace('{W_PX}', str(pxW))
+    projStr = projStr.replace('{H_PX}', str(pxH))
+    projStr = projStr.replace('{ZOOMS}', str(zoomlevels))
+    open(join(cfg['outDir'], 'project.yaml'), 'w').write(projStr)
+
+    if zoomlevels >= SMALL_ZOOM:
+        ## save cropped image for core segmentation
+        im = misc.imread(join(imDir, '0_0_%d.jpg' % SMALL_ZOOM))
+        info = open(join(cfg['outDir'], STACK_NAME, '0', 'info.txt')).read()
+        w, h = re.findall(r'total size: (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)', info)[0]
+        w = float(w)
+        h = float(h)
+        print ('actual dims: (%s, %s)' % (w, h))
+        w = round(w / (2 ** SMALL_ZOOM))
+        h = round(h / (2 ** SMALL_ZOOM))
+        print ('cropped dims: (%s, %s)' % (w, h))
+        im = im[:h, :w]
+        print ('saving cropped.jpg')
+        misc.imsave(join(imDir, 'cropped.jpg'), im)
+    
+def saveZoomedImsZoomify(folder,outdir,verbose=True):
+    #Zoomify in ZOOM-ROW-COL.jpg, zoom = 0 is zoomed out 
+    #Also Zoomify tilegroups are in 256 packages
+    #Mostly stolen from OpenLayers, blame them not me!
+    def getPath(name):
+        return join(folder, name)
+    #Build data structures for weird zoomify tilegroups
+    defaultselector=['0_*_%d.jpg','*_0_%d.jpg']
+    gridW= len(glob(getPath(defaultselector[0] % 0)))
+    gridH = len(glob(getPath(defaultselector[1] % 0)))
+    imgH,imgW = misc.imread(getPath('0_0_0.jpg')).shape #Yes, its in row,cols
+    assert(imgH==imgW)
+    tilesize = imgH
+    tiles = (gridW,gridH)
+    tierSizeInTiles = [tiles]
+    imageSize=imgW*gridW,imgH*gridH
+    tierImageSize = [imageSize]
+    while (imageSize[0]>tilesize  and imageSize[1] > tilesize):
+        imageSize = math.floor(imageSize[0]/2),math.floor(imageSize[1]/2)#Why floor?
+        tiles = math.ceil(imageSize[0]/tilesize),math.ceil(imageSize[1]/tilesize)
+        tierImageSize.append(imageSize)
+        tierSizeInTiles.append(tiles)    
+    tierImageSize=tierImageSize[::-1]
+    imgcount = 0    
+    for t in tierSizeInTiles:
+        imgcount =imgcount+ t[0]*t[1]
+    tierSizeInTiles=tierSizeInTiles[::-1]
+    numberOfTiers=len(tierSizeInTiles)
+    tileCountUpToTier = [0]
+    resolutions = [1]
+    for i in range(1,numberOfTiers):
+        resolutions.insert(0, math.floor(math.pow(2,i)))
+        sz = tierSizeInTiles[i-1]        
+        val=sz[0]*sz[1]+tileCountUpToTier[i-1]
+        tileCountUpToTier.append(val)
+    print(tileCountUpToTier)
+    
+    def printV(*args):
+        if verbose:
+            print( ' '.join(str(a) for a in args))
+            
+    def filenames(row,col,zoom):
+            namestring='%d_%d_%d.jpg'
+            return namestring % (row,col,zoom)
+    
+    def count(dim,zoom):
+            selector=['0_*_%d.jpg','*_0_%d.jpg']
+            return len(glob(getPath(selector[dim] % zoom)))
+            return len(glob(what))
+    
+    zoomrange = range(0,numberOfTiers-1,1)#Zoom 1 is already done
+    print(zoomrange)
+    for zoom in zoomrange:
+        printV('--- generating zoom %d ---' % (zoom))
+        gridW =count(0,zoom)
+        gridH =count(1,zoom)
+        printV('gridW:', gridW, 'gridH:', gridH)
+        size = None
+        for x in range(0, gridW, 2):
+            for y in range(0, gridH, 2):
+                ims = []
+                for dy in (0, 1):
+                    for dx in (0, 1):
+                        name = getPath(filenames(y + dy, x + dx, zoom))
+                        printV('read', name)
+                        try:
+                            im = misc.imread(name)
+                        except IOError:
+                            printV('not there, fill empty')
+                            ims.append(np.zeros((size[0] * 0.5, size[1] * 0.5)))
+                        else:
+                            if size is None:
+                                size = im.shape
+                            ims.append(misc.imresize(im, 0.5, 'nearest'))
+
+                scaled = np.concatenate((np.concatenate((ims[0], ims[1]), 1), np.concatenate((ims[2], ims[3]), 1)), 0)
+                scaled = scaled.astype('uint8')
+
+                name = getPath(filenames(y / 2, x / 2, zoom + 1))
+                printV('saving', name)
+                dirtyWriteImage(name,scaled)
+        
+    #Fix the names
+    imageroot = '%s/image'%outdir 
+    if not os.path.exists(imageroot):    
+        os.mkdir(imageroot)
+        
+    def groupPath(group):
+        return '%s/TileGroup%d' %(imageroot,group)
+        
+    def getTile(row,col,zoom):
+        w=tierSizeInTiles[zoom]
+        idx = col+row*w[0]+tileCountUpToTier[zoom]
+        group = int(math.floor(idx/256))
+        return (getPath('%s/%d-%d-%d.jpg' %(groupPath(group),zoom,col,row)),group)
+    
+    safe={}
+    def checkFolder(group):
+        if not group in safe:
+            dirpath=groupPath(group)
+            if not os.path.exists(dirpath):
+                os.mkdir(dirpath)
+            safe[group]=True
+    
+    tierSizeInTilesIn=tierSizeInTiles[::-1]
+    for z in range(0,numberOfTiers):
+        gridW,gridH = tierSizeInTilesIn[z]
+        for x in range(0,gridW):
+                for y in range(0,gridH):
+                    src=getPath(filenames(y,x ,z))
+                    zout = numberOfTiers-z-1
+                    dst,group=getTile(y,x,zout)
+                    checkFolder(group)
+                    print("%s->%s" %(src,dst))
+                    shutil.move(src,dst)
+
+    srcZ=toAbsolutePath("../zoomify")
+    distutils.dir_util.copy_tree(srcZ,outdir,verbose=False)
+    lazyxml=r'<IMAGE_PROPERTIES WIDTH="%f" HEIGHT="%f" NUMTILES="%d" NUMIMAGES="1" VERSION="1.8" TILESIZE="%d" />'        
+    dstLabel="//%s//ImageProperties.xml" %imageroot
+    pxW=tierImageSize[-1][0]
+    pxH=tierImageSize[-1][1]
+    with open(dstLabel, "w") as text_file:
+        text_file.write(lazyxml %(pxW,pxH,imgcount,tilesize))     
+    
+    stackextra = '%s/%s'%(outdir,STACK_NAME )
+    if os.path.exists(stackextra):    
+        shutil.rmtree(stackextra)      
+                
+
 
 def makeOrderedImData(dat, snakeDir, szInIms):
     """Rearrange items in dat, whose elements are in a snake shape, into row-major order. Return new array."""
@@ -162,8 +306,9 @@ def fixJsonPaths(cfg):
 #                cfg[name]=abspath
 #            else:
 #                err("Can't find %s" % abspath)
-    if os.path.exists(cfg['outDir']):
-        err("Output path already exists, please clear before continuing")
+    outdir=cfg['outDir']
+    if os.path.exists(outdir):
+        err("Output path already exists, please clear before continuing:\n%s" % outdir)
         
     return cfg
 
@@ -174,12 +319,13 @@ def stitching(fin):
     raster = cfg.get("rasterFormat","CATMAID")
     imFiles, coords, snakeDir, cols, rows, xOff, yOff = parsePoslistDir(cfg['inDir'], cfg.get('poslist', None),cfg.get('pixelRatio',1))
     im = misc.imread(imFiles[0])
+    imH, imW = im.shape #Yes, its rows first
+    outdir = cfg['outDir']
+    imDir = join(outdir, STACK_NAME, '0')
+    mkdir(outdir)
+    mkdir(imDir)#Necissary?
     imH, imW = im.shape
-    imDir = join(cfg['outDir'], STACK_NAME, '0')
-    mkdir(cfg['outDir'])
-    mkdir(imDir)
-    imH, imW = im.shape
-    imDir = join(cfg['outDir'], STACK_NAME, '0')
+    imDir = join(outdir, STACK_NAME, '0')
     mkdir(cfg['outDir'])
     mkdir(imDir)
     zoomlevels = cfg.get('zoomLvls') #user inputs 3 they expect 3 levels, not 4, consider 1 as corner case input
@@ -198,7 +344,7 @@ def stitching(fin):
     outWidth = cfg.get('outWidth',1024)
     outHeight = cfg.get('outHeight',1024)
     if ((outWidth != outHeight) and (raster=="ZOOMIFY")):
-        err("Zoomify requires squre output tiles")
+        err("Zoomify requires squre output tiles:")
                         
     weightPwr = cfg.get('weightPwr', 1)
     weightPwr = cfg.get('weightPwr', 1)    
@@ -276,62 +422,11 @@ def stitching(fin):
     if  codes != 0:
         print("Stitching returned an error: %d" %codes)
         sys.exit(1)
-        
-    pxW, pxH = saveZoomedIms(imDir, zoomlevels,raster)
-    if (raster=="CATMAID"): #other modes not yet supported
-        # write small.jpg: icon image for catmaid
-        im = misc.imread(join(imDir, '0_0_%d.jpg' % zoomlevels))
-        if len(im) > len(im[0]):
-            # height > width
-            im = misc.imresize(im, 256. / len(im))
-            padLen = (256 - len(im[0])) / 2
-            im = np.pad(im, ((0, 0), (padLen, padLen)), mode='constant')
-        else:
-            im = misc.imresize(im, 256. / len(im[0]))
-            padLen = (256 - len(im)) / 2
-            im = np.pad(im, ((padLen, padLen), (0, 0)), mode='constant')
-            print ('writing small.jpg')
-            misc.imsave(join(cfg['outDir'], STACK_NAME, '0', 'small.jpg'), im)
 
-        # write project.yaml file
-        projStr = open('project.yaml').read()
-        projStr = projStr.replace('{NAME}', cfg['projName'])
-        print ('total pixel width/height: %d/%d' % (pxW, pxH))
-        projStr = projStr.replace('{W_PX}', str(pxW))
-        projStr = projStr.replace('{H_PX}', str(pxH))
-        projStr = projStr.replace('{ZOOMS}', str(zoomlevels))
-        open(join(cfg['outDir'], 'project.yaml'), 'w').write(projStr)
-
-        if zoomlevels >= SMALL_ZOOM:
-            ## save cropped image for core segmentation
-            im = misc.imread(join(imDir, '0_0_%d.jpg' % SMALL_ZOOM))
-            info = open(join(cfg['outDir'], STACK_NAME, '0', 'info.txt')).read()
-            w, h = re.findall(r'total size: (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)', info)[0]
-            w = float(w)
-            h = float(h)
-            print ('actual dims: (%s, %s)' % (w, h))
-            w = round(w / (2 ** SMALL_ZOOM))
-            h = round(h / (2 ** SMALL_ZOOM))
-            print ('cropped dims: (%s, %s)' % (w, h))
-            im = im[:h, :w]
-            print ('saving cropped.jpg')
-            misc.imsave(join(imDir, 'cropped.jpg'), im)
-    
+    if (raster=="CATMAID"):        
+        saveZoomedImsCatmaid(imDir, zoomlevels)
     if (raster=="ZOOMIFY"):
-        #Fix directories, copy image viewer
-        dst=cfg['outDir']
-        srcZ=toAbsolutePath("../zoomify")
-        distutils.dir_util.copy_tree(srcZ,dst,verbose=False)
-        srcFold=cfg['outDir']+("//%s//0"%STACK_NAME)
-        dstFold=cfg['outDir']+("//%s//TileGroup0"%STACK_NAME)
-        shutil.move(srcFold,dstFold)
-        dirty=r'<IMAGE_PROPERTIES WIDTH="%f" HEIGHT="%f" NUMTILES="%d" NUMIMAGES="1" VERSION="1.8" TILESIZE="%d" />'        
-        dstLabel=cfg['outDir']+("//%s//ImageProperties.xml" %STACK_NAME)
-        tiles=len(glob(dstFold+"//*-*-*.jpg"))
-        print(pxW)
-        with open(dstLabel, "w") as text_file:
-            text_file.write(dirty %(pxW,pxH,tiles,outHeight))
-        ##print 'window size:', getWinSize(im)
+        saveZoomedImsZoomify(imDir,outdir)
 
 def segmentation(fin):
     print (fin)

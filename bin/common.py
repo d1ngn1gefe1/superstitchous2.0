@@ -29,13 +29,14 @@ def parsePoslist(poslistLines, poslistDir,ratio):
     imFiles = []
     coords = []
     for l in poslistLines:
-        #print(l)
         if l.strip().startswith('#') or l.strip().startswith('dim = '):
             continue
         imName = re.search(r'\w+\.tiff?', l).group(0)
         imFiles.append(os.path.abspath(join(poslistDir, imName)))
         coMatch = re.search(r'([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)(?:,|\s)+([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)', l)
-        coords.append((float(coMatch.group(1))*ratio, ratio*float(coMatch.group(2))))
+        what=(float(coMatch.group(1))*ratio, ratio*float(coMatch.group(2)))
+        coords.append(what)
+        #print(what)
     
     #Todo add support stitching a regularly spaced list 
     '''
@@ -108,8 +109,9 @@ def parsePoslistDir(poslistDir, poslistPath,ratio):
                 vals=(name,colstep*col,rowstep*row)
             else:
                 vals=(name,rowstep*row,colstep*col)
-            lines.append('%s,%d,%d,0'% vals)
-        print(lines)
+            text='%s,%d,%d,0'% vals
+            lines.append(text)
+#            print('%s'%text)
     else:
         lines=open(poslistPath).read().splitlines()
     return parsePoslist(lines, poslistDir,ratio)
