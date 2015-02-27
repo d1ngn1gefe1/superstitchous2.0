@@ -116,7 +116,8 @@ void blit(const Mat &a, Mat &b, Point tl) {
 	}
 	//	cout << Rect(tl, aRoi.size()) << endl;
 	//	cout << aRoi << endl;
-	b(Rect(tl, aRoi.size())) += a(aRoi);
+	auto rect = Rect(tl, aRoi.size());
+	b(rect) += a(aRoi);
 }
 
 static void loadGridIm(const string &path,const GridPt& pt, Mat &out, int w, int h)

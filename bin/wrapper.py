@@ -258,7 +258,7 @@ def saveZoomedImsZoomify(folder,outdir,verbose=True):
     srcZ=toAbsolutePath("../zoomify")
     distutils.dir_util.copy_tree(srcZ,outdir,verbose=False)
     lazyxml=r'<IMAGE_PROPERTIES WIDTH="%f" HEIGHT="%f" NUMTILES="%d" NUMIMAGES="1" VERSION="1.8" TILESIZE="%d" />'        
-    dstLabel="//%s//ImageProperties.xml" %imageroot
+    dstLabel="%s//ImageProperties.xml" %imageroot
     pxW=tierImageSize[-1][0]
     pxH=tierImageSize[-1][1]
     with open(dstLabel, "w") as text_file:

@@ -6,6 +6,9 @@ Args/Directory
 in.poslist output 2000 2000 4 4 10 10 10 5 2544 2160 0 1 5 1 -1 4096 4096 1 1 -0.3 0.9
 $(SolutionDir)\..\..\..\bin\four
 
+c:\users\misha\appdata\local\temp\tmpqy2wf7 D:\ScanTest2\output -496.0 -620.0 40 30 -1 -1 -1 50 1392 1040 True 0 1 1 0 512 512 1 0 -0.3 0.7
+
+c:\users\misha\appdata\local\temp\tmpft0m9p D:\stichingcode\superstitchous2.0\testdata\celldata\output\stack1\0 -186.0 -186.0 4 4 -1 -1 -1 50 528 512 True 0 1 1 0 512 512 1 0 -0.3 0.7
 */
 
 #include <opencv2/opencv.hpp>
@@ -167,6 +170,7 @@ class UserInput
 			}
 		}
 	}
+	const static int expected = 24;
 	public:
 	string outDir, poslist;
 	bool skipAlign;
@@ -219,7 +223,6 @@ class UserInput
 	}
 	void argcheck(int argc)
 	{
-		auto expected = 24;
 		if (argc != expected)
 		{
 			std::string errormsg = string("Wrong number of arguments saw: ") + std::to_string(argc) + string("/") + std::to_string(expected);

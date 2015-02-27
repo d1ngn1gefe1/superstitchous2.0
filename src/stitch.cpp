@@ -47,6 +47,7 @@
 // make pyramid shaped weight matrix in out
 static void getWeightMat(const Size &imSz, Mat &out) {
 	out.create(imSz, CV_32FC1);
+	//needs more auto
 	float slope = (float)imSz.height / imSz.width;
 	for (float x = (float)(-(out.cols - 1) / 2.); x <= (out.cols - 1) / 2.; x++) {
 		for (float y = (float)(-(out.rows - 1) / 2.); y <= (out.rows - 1) / 2.; y++) {
@@ -85,13 +86,18 @@ TileHolder::TileHolder(const vector<string> &files, const vector<float> &xs, con
 	for (int i = 0; i < files.size(); i++) {
 		Point2f pos(xs[i], ys[i]);
 		ImData dat = {files[i], pos};
-
-		getBinFromPos(Point2f(xs[i], ys[i])).insert(dat);
-		getBinFromPos(Point2f(xs[i] + imSz.width - 1, ys[i])).insert(dat);
-		getBinFromPos(Point2f(xs[i], ys[i] + imSz.height - 1)).insert(dat);
-		getBinFromPos(Point2f(xs[i] + imSz.width - 1, ys[i] + imSz.height - 1)).insert(dat);
+		auto exhuastW = 0;
+		while (exhuastW <= imSz.width)
+		{
+			auto exhuastH = 0;
+			while (exhuastH <= imSz.height)
+			{
+				getBinFromPos(Point2f(xs[i] + exhuastW, ys[i] + exhuastH)).insert(dat);
+				exhuastH=exhuastH + tileSz.height;
+			}
+			exhuastW=exhuastW + tileSz.width;
+		}
 	}
-
 	getWeightMat(imSz, weightMat);
 }
 
@@ -99,8 +105,9 @@ void TileHolder::makeTile(const GridPt &tilePt, ImgFetcher &fetch, Mat &out, Mat
 	Point2f tileTl(tl.x + tilePt[0] * tileSz.width, tl.y + tilePt[1] * tileSz.height);
 
 	const set<ImData> &bin = getBin(tilePt);
-	out = Mat::zeros(tileSz, CV_32FC1);
-	Mat weightIm = Mat::zeros(tileSz, CV_32FC1) + FLT_MIN;//+ 1e-90;	// avoid divide by zero
+	out = Mat::zeros(tileSz, CV_32FC1);//gather the tile data in out
+	
+	Mat weightIm = Mat::zeros(tileSz, CV_32FC1) + FLT_MIN;//+ 1e-90;	// avoid divide by zero, maybe static this?
 
 	Mat curIm;
 	for (const ImData &dat : bin) {
@@ -118,6 +125,8 @@ void TileHolder::makeTile(const GridPt &tilePt, ImgFetcher &fetch, Mat &out, Mat
 			curIm -= bg;
 		}
 
+		std::cout << dat.file << std::endl;
+		//saveFloatIm("testsomewhere.tif", weightMat);
 		blit(curIm.mul(weightMat), out, dat.pos - tileTl);
 		blit(weightMat, weightIm, dat.pos - tileTl);
 	}

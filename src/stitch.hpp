@@ -30,7 +30,8 @@ struct TileHolder {
 	TileHolder(const vector<string> &files, const vector<float> &xs, const vector<float> &ys, const Size &imSz, const Size &tileSz);
 
 	inline set<ImData> &getBin(const GridPt &tilePt) {
-		return transBins[tilePt[1] * szInTiles.width + tilePt[0]];
+		auto idx = tilePt[1] * szInTiles.width + tilePt[0];
+		return transBins[idx];
 	}
 
 	inline set<ImData> &getBinFromPos(const Point2f &pos) {
