@@ -150,13 +150,14 @@ def saveZoomedImsZoomify(folder,outdir,verbose=True):
     gridW= len(glob(getPath(defaultselector[0] % 0)))
     gridH = len(glob(getPath(defaultselector[1] % 0)))
     imgH,imgW = misc.imread(getPath('0_0_0.jpg')).shape #Yes, its in row,cols
+    print("Grid Width: %d Grid Height: %d"%(gridW,gridH))
     assert(imgH==imgW)
     tilesize = imgH
     tiles = (gridW,gridH)
     tierSizeInTiles = [tiles]
     imageSize=imgW*gridW,imgH*gridH
     tierImageSize = [imageSize]
-    while (imageSize[0]>tilesize  and imageSize[1] > tilesize):
+    while (imageSize[0]>tilesize  or imageSize[1] > tilesize):
         imageSize = math.floor(imageSize[0]/2),math.floor(imageSize[1]/2)#Why floor?
         tiles = math.ceil(imageSize[0]/tilesize),math.ceil(imageSize[1]/tilesize)
         tierImageSize.append(imageSize)
@@ -174,7 +175,6 @@ def saveZoomedImsZoomify(folder,outdir,verbose=True):
         sz = tierSizeInTiles[i-1]        
         val=sz[0]*sz[1]+tileCountUpToTier[i-1]
         tileCountUpToTier.append(val)
-    print(tileCountUpToTier)
     
     def printV(*args):
         if verbose:
@@ -427,6 +427,8 @@ def stitching(fin):
         saveZoomedImsCatmaid(imDir, zoomlevels)
     if (raster=="ZOOMIFY"):
         saveZoomedImsZoomify(imDir,outdir)
+    #
+    print("Done!")
 
 def segmentation(fin):
     print (fin)

@@ -39,18 +39,6 @@ def parsePoslist(poslistLines, poslistDir,ratio):
         #print(what)
     
     #Todo add support stitching a regularly spaced list 
-    '''
-    posA=coords[0][0]
-    posB=coords[1][0]
-    posC=coords[2][0]
-    posAA=coords[0][1]
-    posBB=coords[1][1]
-    posCC=coords[2][1]
-    print(posA,posB,posC)
-    print(posAA,posBB,posCC)
-#   print(posA,posB)
-#   print(posC,posD)
-    '''
     #snakedir = 'col' means 1st dim is constant for a row
     #snakedir = 'row' means 2nd dim is constant for a row
     rowFirstDim = (coords[0][0] == coords[1][0])
@@ -80,6 +68,7 @@ def parsePoslist(poslistLines, poslistDir,ratio):
         xOff = -1
         yOff = -1
     return imFiles, coords, snakeDir, cols, rows, xOff, yOff
+    
 def snake(i,c,r):
     row = int(i/c)
     rem = i%c

@@ -8,9 +8,10 @@ import os
 #other='/home/daniel/Desktop/Fantasy_Fudge.jpg'
 #print(misc.imread(other).shape)
 #
-cells='ScanTest.json'
+#cells='ScanTest.json'
 #cells='bloottest.json'
 #cells='celltest.json'
+cells='bigbone.json'
 proto=json.load(open(cells))
 outdir=proto.get("outDir")
 #
