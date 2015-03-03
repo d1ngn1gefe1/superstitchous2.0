@@ -86,10 +86,10 @@ TileHolder::TileHolder(const vector<string> &files, const vector<float> &xs, con
 	for (int i = 0; i < files.size(); i++) {
 		Point2f pos(xs[i], ys[i]);
 		ImData dat = {files[i], pos};
-		auto exhuastW = 0;
+		int exhuastW = 0;
 		while (exhuastW <= imSz.width)
 		{
-			auto exhuastH = 0;
+			int exhuastH = 0;
 			while (exhuastH <= imSz.height)
 			{
 				getBinFromPos(Point2f(xs[i] + exhuastW, ys[i] + exhuastH)).insert(dat);

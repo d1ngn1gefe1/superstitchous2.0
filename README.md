@@ -64,7 +64,7 @@ outHeight                         	 | Rasterized tile height | 1024
 writeJPG			    		 | Write JPGs? | `true`
 writeTIF			   				| Write floating point TIF files? | `false`
 colormapMin							| Color for pure black (0,0,0) |-0.3
-colormapMax							| Color for pure white (1,1,1) |0.7
+colormapMax							| Color for pure white (1,1,1) |0.8
 rasterFormat                        | Naming convention for files, choose from `CATMAID` or `ZOOMIFY` | `CATMAID`
 
 The defaults for peak offset linearly extrapolate between 0% image overlap (0 peak offset; trust stage completely), and 100% overlap (peak offset is 0.2 * "image dimension"). (Maybe this will work?)

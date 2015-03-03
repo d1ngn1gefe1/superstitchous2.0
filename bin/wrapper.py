@@ -45,7 +45,7 @@ def dirtyWriteImage(name,image):
         ImageFile.MAXBLOCK = img.size[0] * img.size[1]
         img.save(name, "JPEG", quality=q, optimize=True, progressive=True)   
            
-def saveZoomedImsCatmaid(folder, zoomLvls,raster, verbose=True):
+def saveZoomedImsCatmaid(folder, zoomLvls, verbose=True):
     #CATMAID in ROW_COL_ZOOM.jpg, zoom = 0 is zoomed in
     def getPath(name):
         return join(folder, name)
@@ -64,7 +64,6 @@ def saveZoomedImsCatmaid(folder, zoomLvls,raster, verbose=True):
             return len(glob(what))
     
     zoomrange = range(0,zoomLvls-1,1)#Zoom 1 is already done
-    print(zoomrange)
     for zoom in zoomrange:
         printV('--- generating zoom %d ---' % (zoom))
         gridW =count(0,zoom)
@@ -102,7 +101,7 @@ def saveZoomedImsCatmaid(folder, zoomLvls,raster, verbose=True):
     pxH, pxW = misc.imread(first).shape
     pxW,pxH = pxW * gridW, pxH * gridH
     # write small.jpg: icon image for catmaid
-    im = misc.imread(join(imDir, '0_0_%d.jpg' % zoomlevels))
+    im = misc.imread(join(folder, '0_0_%d.jpg' % zoomLvls))
     if len(im) > len(im[0]):
         # height > width
         im = misc.imresize(im, 256. / len(im))
@@ -121,12 +120,12 @@ def saveZoomedImsCatmaid(folder, zoomLvls,raster, verbose=True):
     print ('total pixel width/height: %d/%d' % (pxW, pxH))
     projStr = projStr.replace('{W_PX}', str(pxW))
     projStr = projStr.replace('{H_PX}', str(pxH))
-    projStr = projStr.replace('{ZOOMS}', str(zoomlevels))
+    projStr = projStr.replace('{ZOOMS}', str(zoomLvls))
     open(join(cfg['outDir'], 'project.yaml'), 'w').write(projStr)
 
-    if zoomlevels >= SMALL_ZOOM:
+    if zoomLvls >= SMALL_ZOOM:
         ## save cropped image for core segmentation
-        im = misc.imread(join(imDir, '0_0_%d.jpg' % SMALL_ZOOM))
+        im = misc.imread(join(folder, '0_0_%d.jpg' % SMALL_ZOOM))
         info = open(join(cfg['outDir'], STACK_NAME, '0', 'info.txt')).read()
         w, h = re.findall(r'total size: (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)', info)[0]
         w = float(w)
@@ -137,7 +136,7 @@ def saveZoomedImsCatmaid(folder, zoomLvls,raster, verbose=True):
         print ('cropped dims: (%s, %s)' % (w, h))
         im = im[:h, :w]
         print ('saving cropped.jpg')
-        misc.imsave(join(imDir, 'cropped.jpg'), im)
+        misc.imsave(join(folder, 'cropped.jpg'), im)
     
 def saveZoomedImsZoomify(folder,outdir,verbose=True):
     #Zoomify in ZOOM-ROW-COL.jpg, zoom = 0 is zoomed out 
@@ -265,6 +264,11 @@ def saveZoomedImsZoomify(folder,outdir,verbose=True):
         text_file.write(lazyxml %(pxW,pxH,imgcount,tilesize))     
     
     stackextra = '%s/%s'%(outdir,STACK_NAME )
+    poslist = '%s/0/stitch_poslist' % stackextra
+    poslistdest='%s/stitch_poslsit'% imageroot
+    if os.path.exists(poslist):
+        shutil.move(poslist,poslistdest)
+        
     if os.path.exists(stackextra):    
         shutil.rmtree(stackextra)      
                 
@@ -328,7 +332,7 @@ def stitching(fin):
     imDir = join(outdir, STACK_NAME, '0')
     mkdir(cfg['outDir'])
     mkdir(imDir)
-    zoomlevels = cfg.get('zoomLvls') #user inputs 3 they expect 3 levels, not 4, consider 1 as corner case input
+    zoomlevels = cfg.get('zoomLvls',6)
     if skipAlign:
         maxPeakX = -1
         maxPeakY = -1
@@ -405,7 +409,7 @@ def stitching(fin):
             outWidth,
             outHeight,
             int(cfg.get('writeJPG', 1)),
-            int(cfg.get('writeTIF', 1)),
+            int(cfg.get('writeTIF', 0)),
             float(cfg.get('colormapMin', -.3)),
             float(cfg.get('colormapMax', 0.7)),
             ]
